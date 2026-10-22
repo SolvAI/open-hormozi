@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: white;
+    padding: 48px 40px;
+    text-align: center;
+  }
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  .header-text {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #94a3b8;
+    margin-bottom: 32px;
+  }
+  .logo-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: #f1f5f9;
+    border: 1px solid #f1f5f9;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .logo-cell {
+    background: white;
+    padding: 28px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 90px;
+    transition: background 0.2s;
+  }
+  .logo-cell:hover { background: #fafbfc; }
+  .logo-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-icon {
+    width: 48px;
+    height: 48px;
+    background: #f1f5f9;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 800;
+    color: #94a3b8;
+  }
+  .logo-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #f1f5f9;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-number {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+  .footer {
+    font-size: 9px;
+    color: #cbd5e1;
+    margin-top: 24px;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-text" id="header">Trusted By</div>
+    <div class="logo-grid" id="logo-grid"></div>
+    <div class="stats-bar" id="stats-bar"></div>
+    <div class="footer">Logo Wall — Proof & Credibility Kit</div>
+  </div>
+
+  <script>
+    const DATA = __DATA_PLACEHOLDER__;
+    const grid = document.getElementById('logo-grid');
+    const statsBar = document.getElementById('stats-bar');
+
+    if (DATA.headline) {
+      document.getElementById('header').textContent = DATA.headline;
+    }
+
+    const logos = DATA.logos || DATA.clients || [];
+    logos.forEach(logo => {
+      const name = (typeof logo === 'string') ? logo : (logo.name || logo);
+      const initials = name.split(' ')
+        .map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+      const cell = document.createElement('div');
+      cell.className = 'logo-cell';
+      cell.innerHTML =
+        '<div class="logo-placeholder">' +
+          '<div class="logo-icon">' + esc(initials) + '</div>' +
+          '<div class="logo-name">' + esc(name) + '</div>' +
+        '</div>';
+      grid.appendChild(cell);
+    });
+
+    const minCells = Math.max(8, Math.ceil(logos.length / 4) * 4);
+    for (let i = logos.length; i < minCells; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'logo-cell';
+      cell.innerHTML = '<div class="logo-placeholder">' +
+        '<div class="logo-icon" style="opacity:0.3">+</div></div>';
+      grid.appendChild(cell);
+    }
+
+    const stats = DATA.stats || [];
+    stats.forEach(stat => {
+      const div = document.createElement('div');
+      div.className = 'stat';
+      div.innerHTML =
+        '<div class="stat-number">' + esc(stat.number || stat.value || '') + '</div>' +
+        '<div class="stat-label">' + esc(stat.label || '') + '</div>';
+      statsBar.appendChild(div);
+    });
+
+    if (!stats.length && DATA.total_clients) {
+      statsBar.innerHTML =
+        '<div class="stat"><div class="stat-number">' + esc(DATA.total_clients) + '</div>' +
+        '<div class="stat-label">Clients Served</div></div>';
+    }
+
+    function esc(t) { return String(t||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  </script>
+</body>
+</html>

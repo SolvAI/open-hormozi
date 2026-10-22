@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f2f5;
+    padding: 40px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 {
+    font-size: 20px; font-weight: 700; color: #1a1a2e;
+    text-align: center; margin-bottom: 28px;
+  }
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .case-card {
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    display: grid;
+    grid-template-columns: 200px 1fr;
+  }
+  .card-left {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: white;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .client-logo {
+    width: 64px; height: 64px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: rgba(255,255,255,0.6);
+  }
+  .client-name {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .client-industry {
+    font-size: 11px;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .card-right {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .metric-row {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+  .metric {
+    flex: 1;
+  }
+  .metric-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+  }
+  .metric-challenge {
+    font-size: 13px;
+    color: #ef4444;
+    line-height: 1.5;
+  }
+  .metric-result {
+    font-size: 13px;
+    color: #22c55e;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .result-arrow {
+    color: #22c55e;
+    margin-right: 4px;
+  }
+  .quote-block {
+    background: #f8fafc;
+    border-left: 3px solid #e94560;
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 4px;
+  }
+  .quote-text {
+    font-size: 13px;
+    font-style: italic;
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 4px;
+  }
+  .quote-author {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+  .footer {
+    text-align: center;
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: 24px;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Case Studies — Client Results</h1>
+    <div class="cards" id="cards"></div>
+    <div class="footer">Case Studies — Proof & Credibility Kit</div>
+  </div>
+
+  <script>
+    const DATA = __DATA_PLACEHOLDER__;
+    const container = document.getElementById('cards');
+
+    (DATA.cards || []).forEach(card => {
+      const initials = (card.client_name || 'C')
+        .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+      const div = document.createElement('div');
+      div.className = 'case-card';
+      div.innerHTML =
+        '<div class="card-left">' +
+          '<div class="client-logo">' + esc(initials) + '</div>' +
+          '<div class="client-name">' + esc(card.client_name || '') + '</div>' +
+          '<div class="client-industry">' + esc(card.industry || '') + '</div>' +
+        '</div>' +
+        '<div class="card-right">' +
+          '<div class="metric-row">' +
+            '<div class="metric">' +
+              '<div class="metric-label">Challenge</div>' +
+              '<div class="metric-challenge">' + esc(card.challenge || '') + '</div>' +
+            '</div>' +
+            '<div class="metric">' +
+              '<div class="metric-label">Result</div>' +
+              '<div class="metric-result"><span class="result-arrow">↑</span>' +
+                esc(card.result || '') + '</div>' +
+            '</div>' +
+          '</div>' +
+          (card.quote ?
+            '<div class="quote-block">' +
+              '<div class="quote-text">"' + esc(card.quote) + '"</div>' +
+              (card.quote_author ?
+                '<div class="quote-author">— ' + esc(card.quote_author) + '</div>' : '') +
+            '</div>' : '') +
+        '</div>';
+
+      container.appendChild(div);
+    });
+
+    function esc(t) { return (t||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  </script>
+</body>
+</html>

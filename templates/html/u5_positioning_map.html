@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f8fafc;
+    padding: 40px;
+    color: #1e293b;
+  }
+  .container {
+    background: white;
+    border-radius: 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 36px 40px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 28px;
+    color: #0f172a;
+    text-align: center;
+  }
+  .map-wrapper {
+    position: relative;
+    width: 700px;
+    height: 500px;
+    margin: 0 auto;
+  }
+  .map {
+    position: absolute;
+    top: 30px; left: 60px;
+    width: 580px; height: 420px;
+    border-left: 2px solid #cbd5e1;
+    border-bottom: 2px solid #cbd5e1;
+    background:
+      linear-gradient(to right, rgba(239,68,68,0.04), rgba(34,197,94,0.04)),
+      linear-gradient(to top, rgba(239,68,68,0.04), rgba(34,197,94,0.04));
+  }
+  .map::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-top: 1px dashed #e2e8f0;
+    border-right: 1px dashed #e2e8f0;
+  }
+  .axis-label {
+    position: absolute;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #64748b;
+  }
+  .axis-x-label { bottom: -4px; left: 60px; right: 0; text-align: center; }
+  .axis-y-label {
+    top: 30px; left: -8px;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    height: 420px;
+    text-align: center;
+  }
+  .axis-end {
+    position: absolute;
+    font-size: 10px;
+    color: #94a3b8;
+  }
+  .x-low  { bottom: -20px; left: 60px; }
+  .x-high { bottom: -20px; right: 0; }
+  .y-low  { top: 452px; left: 20px; }
+  .y-high { top: 28px; left: 20px; }
+  .dot {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 2;
+  }
+  .dot-circle {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #64748b;
+    border: 3px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    margin: 0 auto 4px;
+  }
+  .dot.highlight .dot-circle {
+    width: 24px; height: 24px;
+    background: #e94560;
+    box-shadow: 0 0 0 4px rgba(233,69,96,0.2), 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .dot-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+    background: rgba(255,255,255,0.9);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .dot.highlight .dot-label {
+    color: #e94560;
+    font-weight: 700;
+  }
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 16px;
+    font-size: 11px;
+    color: #64748b;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .legend-dot.you { background: #e94560; }
+  .legend-dot.other { background: #64748b; }
+  .footer {
+    text-align: center;
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Positioning Map</h1>
+    <div class="map-wrapper" id="map-wrapper">
+      <div class="axis-y-label" id="ay-label"></div>
+      <div class="axis-x-label" id="ax-label"></div>
+      <div class="axis-end x-low" id="ax-low"></div>
+      <div class="axis-end x-high" id="ax-high"></div>
+      <div class="axis-end y-low" id="ay-low"></div>
+      <div class="axis-end y-high" id="ay-high"></div>
+      <div class="map" id="map"></div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot you"></div> Your Position</div>
+      <div class="legend-item"><div class="legend-dot other"></div> Alternatives</div>
+    </div>
+    <div class="footer">Positioning Map · Made with OpenHormozi</div>
+  </div>
+
+  <script>
+    const DATA = __DATA_PLACEHOLDER__;
+    const map = document.getElementById('map');
+
+    document.getElementById('ax-label').textContent = (DATA.axis_x || {}).label || '';
+    document.getElementById('ay-label').textContent = (DATA.axis_y || {}).label || '';
+    document.getElementById('ax-low').textContent = (DATA.axis_x || {}).low || '';
+    document.getElementById('ax-high').textContent = (DATA.axis_x || {}).high || '';
+    document.getElementById('ay-low').textContent = (DATA.axis_y || {}).low || '';
+    document.getElementById('ay-high').textContent = (DATA.axis_y || {}).high || '';
+
+    (DATA.positions || []).forEach(pos => {
+      const dot = document.createElement('div');
+      dot.className = 'dot' + (pos.highlight ? ' highlight' : '');
+      dot.style.left = (pos.x * 100) + '%';
+      dot.style.bottom = (pos.y * 100) + '%';
+      dot.innerHTML = '<div class="dot-circle"></div><div class="dot-label">' +
+        pos.name.replace(/</g, '&lt;') + '</div>';
+      map.appendChild(dot);
+    });
+  </script>
+</body>
+</html>

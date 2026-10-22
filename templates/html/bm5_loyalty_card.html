@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f2f5;
+    padding: 60px 40px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+  }
+  .card {
+    width: 480px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  }
+
+  /* ── Loyalty Card ── */
+  .loyalty .card-top {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: white;
+    padding: 32px 28px 24px;
+  }
+  .loyalty .card-top .type {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.6;
+    margin-bottom: 12px;
+  }
+  .loyalty .card-top h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .loyalty .card-top .brand {
+    font-size: 13px;
+    opacity: 0.7;
+  }
+  .loyalty .card-body {
+    background: white;
+    padding: 24px 28px;
+  }
+  .loyalty .reward-badge {
+    background: linear-gradient(135deg, #e94560, #c73e54);
+    color: white;
+    padding: 14px 20px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .loyalty .reward-badge .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.85;
+    margin-bottom: 4px;
+  }
+  .loyalty .reward-badge .reward {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .stamps {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .stamp {
+    aspect-ratio: 1;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #d1d5db;
+  }
+  .stamp.filled {
+    background: #ecfdf5;
+    border: 2px solid #22c55e;
+    color: #22c55e;
+  }
+  .terms {
+    font-size: 10px;
+    color: #94a3b8;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* ── Referral Card ── */
+  .referral .card-top {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    color: white;
+    padding: 32px 28px 24px;
+  }
+  .referral .card-top .type {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.6;
+    margin-bottom: 12px;
+  }
+  .referral .card-top h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .referral .card-top .brand {
+    font-size: 13px;
+    opacity: 0.7;
+  }
+  .referral .card-body {
+    background: white;
+    padding: 24px 28px;
+  }
+  .referral .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .referral .benefit-box {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+  }
+  .referral .benefit-box .who {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #7c3aed;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .referral .benefit-box .what {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Loyalty Card -->
+  <div class="card loyalty">
+    <div class="card-top">
+      <div class="type">Loyalty Card</div>
+      <h2>{{ headline }}</h2>
+      <div class="brand">{{ brand_name }}</div>
+    </div>
+    <div class="card-body">
+      <div class="reward-badge">
+        <div class="label">Your Reward</div>
+        <div class="reward">{{ reward }}</div>
+      </div>
+      <div class="stamps">
+        <div class="stamp filled">✓</div>
+        <div class="stamp filled">✓</div>
+        <div class="stamp">☆</div>
+        <div class="stamp">☆</div>
+        <div class="stamp">☆</div>
+        <div class="stamp">☆</div>
+        <div class="stamp">☆</div>
+        <div class="stamp">☆</div>
+        <div class="stamp">☆</div>
+        <div class="stamp">☆</div>
+      </div>
+      <div class="terms">{{ terms }}</div>
+    </div>
+  </div>
+
+  <!-- Referral Card -->
+  <div class="card referral">
+    <div class="card-top">
+      <div class="type">Referral Program</div>
+      <h2>{{ subline }}</h2>
+      <div class="brand">{{ brand_name }}</div>
+    </div>
+    <div class="card-body">
+      <div class="two-col">
+        <div class="benefit-box">
+          <div class="who">You receive</div>
+          <div class="what">{{ reward }}</div>
+        </div>
+        <div class="benefit-box">
+          <div class="who">Your referral receives</div>
+          <div class="what">{{ reward }}</div>
+        </div>
+      </div>
+      <div class="terms">{{ terms }}</div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenHormozi</title>
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/static/fonts/archivo-variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<a class="skip" href="#view">Skip to content</a>
+<header class="topbar">
+  <a class="wordmark" href="#/">Open<span>Hormozi</span></a>
+  <nav class="nav" aria-label="Main">
+    <a href="#/" data-nav="list">Strategies</a>
+    <a href="#/new" data-nav="new">New strategy</a>
+    <a href="#/settings" data-nav="settings">Settings</a>
+  </nav>
+  <a class="keystate" id="keystate" href="#/settings" hidden></a>
+</header>
+<main id="view" tabindex="-1"></main>
+<div class="toasts" id="toasts" role="region" aria-label="Notifications" aria-live="polite"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

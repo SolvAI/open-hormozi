@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Your data: API key, strategies, generated documents
+data/
+output/
+logs/
+.env
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

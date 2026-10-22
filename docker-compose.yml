@@ -1,0 +1,11 @@
+services:
+  openhormozi:
+    build: .
+    ports:
+      - "127.0.0.1:8765:8765"   # only reachable from this computer
+    volumes:
+      - ./data:/data
+    environment:
+      # Optional: or paste the key in Settings once the app is open.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    restart: unless-stopped

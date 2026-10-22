@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #e2e8f0;
+    padding: 32px;
+    color: #1e293b;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .browser {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  }
+  .browser-bar {
+    background: #f1f5f9;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .browser-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #cbd5e1;
+  }
+  .browser-dot.r { background: #fca5a5; }
+  .browser-dot.y { background: #fcd34d; }
+  .browser-dot.g { background: #86efac; }
+  .browser-url {
+    flex: 1;
+    background: white;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-left: 8px;
+  }
+  .page-content {
+    padding: 0;
+  }
+  .wire-section {
+    padding: 20px 28px;
+    border-bottom: 1px dashed #e2e8f0;
+    position: relative;
+  }
+  .wire-section:last-child { border-bottom: none; }
+
+  .section-badge {
+    position: absolute;
+    top: 8px; right: 12px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #64748b;
+  }
+  .wire-section.hero { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; min-height: 140px; }
+  .wire-section.hero .section-badge { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+  .wire-section.hero h2 { font-size: 22px; margin-bottom: 6px; }
+  .wire-section.hero p { font-size: 13px; opacity: 0.8; max-width: 520px; }
+
+  .wire-section.medium { min-height: 100px; }
+  .wire-section.short { min-height: 60px; }
+  .wire-section.tall { min-height: 140px; }
+
+  .wire-section h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #0f172a;
+  }
+  .wire-section.hero h3 { color: white; }
+  .wire-brief {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.6;
+    background: #f8fafc;
+    border-radius: 6px;
+    padding: 10px 14px;
+    border-left: 3px solid #3b82f6;
+  }
+  .wire-section.hero .wire-brief {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.75);
+    border-left-color: #e94560;
+  }
+
+  .cta-block {
+    text-align: center;
+    padding: 16px;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: #e94560;
+    color: white;
+    padding: 10px 28px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  .annotation {
+    font-size: 10px;
+    color: #94a3b8;
+    text-align: center;
+    padding: 12px;
+    border-top: 1px solid #f1f5f9;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="browser-dot r"></div>
+        <div class="browser-dot y"></div>
+        <div class="browser-dot g"></div>
+        <div class="browser-url">www.example.com/offer</div>
+      </div>
+      <div class="page-content" id="page-content"></div>
+      <div class="annotation">Annotated Wireframe — Recommended Page Structure</div>
+    </div>
+  </div>
+
+  <script>
+    const DATA = __DATA_PLACEHOLDER__;
+    const content = document.getElementById('page-content');
+
+    (DATA.sections || []).forEach((section, i) => {
+      const div = document.createElement('div');
+      const isHero = (section.name || '').toLowerCase().includes('hero');
+      const height = section.height_hint || 'medium';
+
+      div.className = 'wire-section ' + (isHero ? 'hero' : height);
+
+      let html = '<div class="section-badge">' +
+        (section.name || 'Section ' + (i+1)).replace(/</g, '&lt;') + '</div>';
+
+      if (isHero) {
+        html += '<h2>' + (section.name || '').replace(/</g, '&lt;') + '</h2>';
+      } else {
+        html += '<h3>' + (section.name || '').replace(/</g, '&lt;') + '</h3>';
+      }
+
+      if (section.content_brief) {
+        html += '<div class="wire-brief">' +
+          section.content_brief.replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</div>';
+      }
+
+      div.innerHTML = html;
+      content.appendChild(div);
+    });
+
+    // Add final CTA
+    const cta = document.createElement('div');
+    cta.className = 'wire-section cta-block';
+    cta.innerHTML = '<div class="cta-btn">Buy Now →</div>';
+    content.appendChild(cta);
+  </script>
+</body>
+</html>

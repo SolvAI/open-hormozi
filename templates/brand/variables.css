@@ -1,0 +1,98 @@
+/* ═══════════════════════════════════════════════════════════
+   SLATE × AZURE — design tokens for client deliverables
+   Loaded before style.css. Cover, running header/footer and body
+   all read from here, so a rebrand is a single-file change.
+   ═══════════════════════════════════════════════════════════ */
+:root {
+
+  /* ── Typography ──
+     Headings are serif to read as an editorial report rather than a web page;
+     body stays sans for density. Both stacks degrade to system fonts when the
+     Google Fonts request fails (offline render). */
+  --font-display: 'Source Serif 4', 'Iowan Old Style', 'Palatino Linotype',
+                  Palatino, Georgia, 'Times New Roman', serif;
+  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+  --font-size-base: 10.5pt;
+  --font-size-sm:   9.5pt;
+  --font-size-xs:   8pt;
+  --line-height-body:    1.62;
+  --line-height-heading: 1.2;
+
+  /* ── Headings ── */
+  --h1-size: 30pt;  --h1-weight: 600; --h1-tracking: -0.02em;  --h1-transform: none;
+  --h2-size: 16pt;  --h2-weight: 600; --h2-tracking: -0.01em;  --h2-transform: none;
+  --h3-size: 11.5pt; --h3-weight: 700; --h3-tracking: 0;       --h3-transform: none;
+  --h4-size: 9pt;   --h4-weight: 700; --h4-tracking: 0.06em;   --h4-transform: uppercase;
+
+  /* ── Layout ── */
+  --page-max-width: 172mm;   /* A4 width minus the 16mm side margins */
+  --page-padding-x: 0mm;     /* margins are owned by @page / Playwright */
+  --page-padding-y: 0mm;
+  --section-gap:    30px;
+  --paragraph-gap:  11px;
+  --list-indent:    18px;
+
+  /* ── Colors: Text ── */
+  --color-text:           #14161a;
+  --color-text-secondary: #3c414a;
+  --color-text-muted:     #7b828e;
+  --color-heading:        #0f1115;
+
+  /* ── Colors: Accent & Links (Azure) ── */
+  --color-accent:       #2563eb;
+  --color-accent-dark:  #1a3d8f;
+  --color-accent-light: #eff6ff;
+  --color-link:         #2563eb;
+  --color-link-hover:   #1d4ed8;
+
+  /* ── Colors: Backgrounds ── */
+  --color-bg:           #ffffff;
+  --color-bg-secondary: #f6f7f9;
+  --color-cover-bg:     #0f1729;   /* deep navy cover */
+  --color-cover-text:   #ffffff;
+  --color-cover-muted:  #93a4c4;
+
+  /* ── Colors: Borders ── */
+  --color-border:       #ccd1da;
+  --color-border-light: #e6e9ef;
+
+  /* ── Colors: Table ── */
+  --color-table-header-bg:   #0f1729;
+  --color-table-header-text: #ffffff;
+  --color-table-border:      #dfe3ea;
+  --color-table-stripe:      #f7f9fc;
+
+  /* ── Colors: Callout ── */
+  --color-callout-bg:     #eff6ff;
+  --color-callout-border: #bfdbfe;
+  --color-callout-icon:   #2563eb;
+
+  /* ── Colors: Code ── */
+  --color-code-bg:     #f6f7f9;
+  --color-code-text:   #14161a;
+  --color-code-border: #e6e9ef;
+
+  /* ── Colors: Blockquote ── */
+  --color-blockquote-border: #2563eb;
+  --color-blockquote-bg:     #f7f9fc;
+  --color-blockquote-text:   #3c414a;
+
+  /* ── Colors: Highlight ── */
+  --color-highlight-bg:     #fff6d6;
+  --color-highlight-border: #f0d071;
+
+  /* ── Colors: HR ── */
+  --color-hr: #dfe3ea;
+
+  /* ── Radii & Borders ── */
+  --border-radius:    6px;
+  --border-radius-sm: 4px;
+  --border-width:     1px;
+
+  /* ── Accent rule that opens every H2 ── */
+  --rule-width:  3px;
+  --rule-height: 1em;
+}

@@ -1,0 +1,45 @@
+# ─── OpenHormozi configuration ──────────────────────
+# The web app's Settings page overrides `models` per tier. Everything else
+# is read from here. Restart the app after editing this file.
+
+# Claude model per tier
+models:
+  max: "claude-opus-5-5"       # Strategic diagnostic (one call per run)
+  heavy: "claude-opus-5-5"     # Complex docs (offer, funnel, sales playbook, landing page, webinar)
+  medium: "claude-sonnet-5-5"  # Most document generation
+  light: "claude-haiku-5-5"    # Summaries passed between documents
+
+# Reasoning effort per tier: low | medium | high | xhigh | max
+# Opus 5.5 and Haiku 5.5 default to medium when unset, so every tier is explicit.
+effort:
+  max: "xhigh"
+  heavy: "high"
+  medium: "high"
+  light: "medium"
+
+# Max output tokens per tier. Thinking is on by default on current models and
+# shares this budget with the visible answer.
+max_tokens:
+  max: 48000
+  heavy: 48000
+  medium: 32000
+  light: 16000
+
+# Thinking configuration. "summarized" makes the diagnostic's reasoning readable
+# in the logs; the default ("omitted") streams empty thinking blocks.
+thinking:
+  max:
+    type: "adaptive"
+    display: "summarized"
+
+# Retries for rate limits, overload and network errors. When they run out the
+# run stops and can be resumed from the app.
+retry:
+  max_retries: 6
+  base_delay: 2.0
+  max_delay: 60.0
+
+# Output folder for the command-line runner (cli.py). The web app stores its
+# runs under data/jobs/.
+output:
+  base_dir: "output"

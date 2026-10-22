@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page Audit Checklist</title>
+<style>
+  :root {
+    --bg: #f3f4f6;
+    --card: #ffffff;
+    --hdr: #1e293b;
+    --border: #e2e5ea;
+    --green: #16a34a;
+    --green-bg: #dcfce7;
+    --green-border: #86efac;
+    --yellow: #ca8a04;
+    --yellow-bg: #fef9c3;
+    --yellow-border: #fde047;
+    --red: #dc2626;
+    --red-bg: #fee2e2;
+    --red-border: #fca5a5;
+    --muted: #94a3b8;
+    --text: #1e293b;
+    --text2: #475569;
+    --accent: #3b82f6;
+    --r: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text); padding: 32px 24px; line-height: 1.5;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .hdr { margin-bottom: 28px; }
+  .hdr h1 { font-size: 22px; font-weight: 700; color: var(--hdr); }
+  .hdr p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Score Grid: 1 / 2 / 3 ── */
+  .scores { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+  .score-row { display: grid; gap: 10px; }
+  .score-row-1 { grid-template-columns: 1fr; }
+  .score-row-2 { grid-template-columns: 1fr 1fr; }
+  .score-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .sc {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 18px 20px; display: flex; align-items: center; gap: 16px;
+    transition: border-color .2s;
+  }
+  .sc-ring {
+    width: 56px; height: 56px; border-radius: 50%; position: relative;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .sc-ring svg { width: 56px; height: 56px; transform: rotate(-90deg); }
+  .sc-ring circle {
+    fill: none; stroke-width: 5; cx: 28; cy: 28; r: 22;
+  }
+  .sc-ring .track { stroke: #e5e7eb; }
+  .sc-ring .fill { stroke-linecap: round; transition: stroke-dashoffset .5s ease, stroke .3s; }
+  .sc-pct {
+    position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; font-size: 14px; font-weight: 700;
+  }
+  .sc-info .sc-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+    color: var(--muted); font-weight: 600;
+  }
+  .sc-info .sc-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  .sc.green { border-color: var(--green-border); }
+  .sc.yellow { border-color: var(--yellow-border); }
+  .sc.red { border-color: var(--red-border); }
+  .sc.green .sc-pct { color: var(--green); }
+  .sc.yellow .sc-pct { color: var(--yellow); }
+  .sc.red .sc-pct { color: var(--red); }
+  .sc.green .fill { stroke: var(--green); }
+  .sc.yellow .fill { stroke: var(--yellow); }
+  .sc.red .fill { stroke: var(--red); }
+  .sc.empty .fill { stroke: var(--border); }
+  .sc.empty .sc-pct { color: var(--muted); font-size: 13px; }
+
+  .sc-overall { background: var(--hdr); border-color: var(--hdr); }
+  .sc-overall .sc-label { color: #94a3b8; }
+  .sc-overall .sc-sub { color: #cbd5e1; }
+  .sc-overall .track { stroke: #334155; }
+  .sc-overall.green .sc-pct { color: #4ade80; }
+  .sc-overall.yellow .sc-pct { color: #facc15; }
+  .sc-overall.red .sc-pct { color: #f87171; }
+  .sc-overall.green .fill { stroke: #4ade80; }
+  .sc-overall.yellow .fill { stroke: #facc15; }
+  .sc-overall.red .fill { stroke: #f87171; }
+  .sc-overall.empty .sc-pct { color: #64748b; }
+  .sc-overall.empty .fill { stroke: #334155; }
+
+  /* ── Category Card ── */
+  .cat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+    margin-bottom: 14px; overflow: hidden;
+  }
+  .cat-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px; border-bottom: 1px solid var(--border); background: #f8fafc;
+  }
+  .cat-head h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--hdr); }
+  .cat-badge {
+    font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 12px;
+  }
+  .cat-badge.green { background: var(--green-bg); color: var(--green); }
+  .cat-badge.yellow { background: var(--yellow-bg); color: var(--yellow); }
+  .cat-badge.red { background: var(--red-bg); color: var(--red); }
+  .cat-badge.empty { background: #f1f5f9; color: var(--muted); }
+
+  /* ── Item Row ── */
+  .item {
+    display: grid; grid-template-columns: 1fr auto auto;
+    align-items: center; gap: 12px;
+    padding: 10px 18px; border-bottom: 1px solid #f1f5f9;
+    transition: background .1s;
+  }
+  .item:last-child { border-bottom: none; }
+  .item:hover { background: #fafbfc; }
+
+  .item-text { font-size: 13px; color: var(--text2); }
+
+  .item-priority {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+    padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+  }
+  .p-high   { background: #fef2f2; color: var(--red); }
+  .p-medium { background: #fffbeb; color: var(--yellow); }
+  .p-low    { background: #f0fdf4; color: var(--green); }
+
+  /* Status toggle */
+  .toggle {
+    display: flex; gap: 3px;
+  }
+  .toggle button {
+    width: 34px; height: 28px; border: 1.5px solid var(--border); border-radius: 5px;
+    background: white; font-size: 11px; font-weight: 700; cursor: pointer;
+    color: var(--muted); transition: all .15s; display: flex; align-items: center;
+    justify-content: center;
+  }
+  .toggle button:hover { border-color: #94a3b8; }
+  .toggle .on-y  { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+  .toggle .on-n  { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+  .toggle .on-na { background: #f1f5f9; color: #64748b; border-color: #cbd5e1; }
+
+  /* ── Print ── */
+  @media print {
+    body { padding: 0; background: white; font-size: 11pt; }
+    .wrap { max-width: 100%; }
+    .sc, .cat-card { break-inside: avoid; border-color: #ccc !important; }
+    .sc-overall { background: #1e293b !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .cat-head { background: #f0f0f0 !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .toggle button { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .item-priority { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .cat-badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  }
+
+  @media (max-width: 640px) {
+    body { padding: 16px 12px; }
+    .score-row-2 { grid-template-columns: 1fr; }
+    .score-row-3 { grid-template-columns: 1fr; }
+    .item { grid-template-columns: 1fr auto; gap: 8px; }
+    .item-priority { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="hdr">
+    <h1>📋 Page Audit Checklist</h1>
+    <p>Evaluate your online purchase experience across 25 weighted criteria</p>
+  </div>
+
+  <div class="scores" id="scores"></div>
+  <div id="cards"></div>
+</div>
+
+<script>
+const CIRC = 2 * Math.PI * 22; // circumference for r=22
+
+const CATS = [
+  { name: "Trust Signals", items: [
+    { text: "Customer reviews / testimonials visible", p: "high" },
+    { text: "Star ratings displayed", p: "medium" },
+    { text: "Trust badges (payment security, guarantees)", p: "high" },
+    { text: "Media mentions / press logos", p: "low" },
+    { text: "Number of customers served / social proof", p: "medium" },
+  ]},
+  { name: "Offer Clarity", items: [
+    { text: "Clear headline stating what you get", p: "high" },
+    { text: "Price clearly displayed (no hidden fees)", p: "high" },
+    { text: "Benefits listed (not just features)", p: "medium" },
+    { text: "FAQ section addresses objections", p: "medium" },
+    { text: "Guarantee / return policy visible", p: "high" },
+  ]},
+  { name: "Friction Reduction", items: [
+    { text: "Checkout is 3 steps or fewer", p: "high" },
+    { text: "Guest checkout available", p: "high" },
+    { text: "Multiple payment methods", p: "medium" },
+    { text: "Form fields minimized", p: "medium" },
+    { text: "Progress indicator on multi-step forms", p: "low" },
+  ]},
+  { name: "CTA Optimization", items: [
+    { text: "Primary CTA above the fold", p: "high" },
+    { text: "CTA button contrasts with page", p: "medium" },
+    { text: "CTA text is action-oriented (not just 'Submit')", p: "high" },
+    { text: "Single clear CTA per section", p: "medium" },
+    { text: "CTA repeated at bottom of page", p: "low" },
+  ]},
+  { name: "Mobile UX", items: [
+    { text: "Page loads in < 3 seconds on mobile", p: "high" },
+    { text: "Tap targets are large enough (48px+)", p: "medium" },
+    { text: "No horizontal scrolling", p: "high" },
+    { text: "Images optimized for mobile", p: "medium" },
+    { text: "Phone number is click-to-call", p: "low" },
+  ]},
+];
+
+const W = { high: 3, medium: 2, low: 1 };
+const status = {};  // idx → "Y"|"N"|"NA"|""
+
+function ring(pct, cls) {
+  const offset = pct < 0 ? CIRC : CIRC * (1 - pct / 100);
+  return `<svg viewBox="0 0 56 56">
+    <circle class="track" cx="28" cy="28" r="22"/>
+    <circle class="fill" cx="28" cy="28" r="22"
+      stroke-dasharray="${CIRC}" stroke-dashoffset="${offset}"/>
+  </svg>`;
+}
+
+function cls(pct) {
+  if (pct < 0) return "empty";
+  return pct >= 80 ? "green" : pct >= 50 ? "yellow" : "red";
+}
+
+function catScore(catIdx) {
+  const cat = CATS[catIdx];
+  let wY = 0, wTotal = 0, base = 0;
+  for (let i = 0; i < cat.items.length; i++) {
+    const gIdx = catIdx * 5 + i; // assumes 5 items/cat
+    const s = status[gIdx] || "";
+    const w = W[cat.items[i].p];
+    if (s === "Y") { wY += w; wTotal += w; }
+    else if (s === "N") { wTotal += w; }
+    // NA and "" excluded from scoring
+  }
+  return wTotal > 0 ? Math.round(wY / wTotal * 100) : -1;
+}
+
+function overallScore() {
+  let wY = 0, wTotal = 0, idx = 0;
+  for (const cat of CATS) {
+    for (const item of cat.items) {
+      const s = status[idx] || "";
+      const w = W[item.p];
+      if (s === "Y") { wY += w; wTotal += w; }
+      else if (s === "N") { wTotal += w; }
+      idx++;
+    }
+  }
+  return wTotal > 0 ? Math.round(wY / wTotal * 100) : -1;
+}
+
+function countDone() {
+  let n = 0;
+  for (const k in status) if (status[k]) n++;
+  return n;
+}
+
+function renderScores() {
+  const ov = overallScore();
+  const ovC = cls(ov);
+  const done = countDone();
+  const total = Object.keys(status).length || 25;
+
+  let h = `<div class="score-row score-row-1">
+    <div class="sc sc-overall ${ovC}">
+      <div class="sc-ring">${ring(ov, ovC)}<div class="sc-pct">${ov >= 0 ? ov + "%" : "—"}</div></div>
+      <div class="sc-info">
+        <div class="sc-label">Overall Weighted Score</div>
+        <div class="sc-sub">${done} of ${total} items assessed · Priority-weighted</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Row of 2
+  h += `<div class="score-row score-row-2">`;
+  for (let i = 0; i < 2; i++) {
+    const pct = catScore(i); const c = cls(pct);
+    h += `<div class="sc ${c}">
+      <div class="sc-ring">${ring(pct, c)}<div class="sc-pct">${pct >= 0 ? pct + "%" : "—"}</div></div>
+      <div class="sc-info"><div class="sc-label">${CATS[i].name}</div>
+      <div class="sc-sub">${pct >= 0 ? (pct >= 80 ? "Strong" : pct >= 50 ? "Needs work" : "Critical") : "Not assessed"}</div></div>
+    </div>`;
+  }
+  h += `</div>`;
+
+  // Row of 3
+  h += `<div class="score-row score-row-3">`;
+  for (let i = 2; i < 5; i++) {
+    const pct = catScore(i); const c = cls(pct);
+    h += `<div class="sc ${c}">
+      <div class="sc-ring">${ring(pct, c)}<div class="sc-pct">${pct >= 0 ? pct + "%" : "—"}</div></div>
+      <div class="sc-info"><div class="sc-label">${CATS[i].name}</div>
+      <div class="sc-sub">${pct >= 0 ? (pct >= 80 ? "Strong" : pct >= 50 ? "Needs work" : "Critical") : "Not assessed"}</div></div>
+    </div>`;
+  }
+  h += `</div>`;
+
+  document.getElementById("scores").innerHTML = h;
+
+  // Update category badges
+  for (let ci = 0; ci < CATS.length; ci++) {
+    const badge = document.getElementById(`badge_${ci}`);
+    if (badge) {
+      const pct = catScore(ci);
+      badge.className = "cat-badge " + cls(pct);
+      badge.textContent = pct >= 0 ? pct + "%" : "—";
+    }
+  }
+}
+
+function renderCards() {
+  let h = "", idx = 0;
+  for (let ci = 0; ci < CATS.length; ci++) {
+    const cat = CATS[ci];
+    h += `<div class="cat-card">
+      <div class="cat-head"><h2>${cat.name}</h2><span class="cat-badge empty" id="badge_${ci}">—</span></div>`;
+    for (let ii = 0; ii < cat.items.length; ii++) {
+      const item = cat.items[ii];
+      const gIdx = idx;
+      const pCls = "p-" + item.p;
+      const pLabel = item.p.charAt(0).toUpperCase() + item.p.slice(1);
+      h += `<div class="item" id="row_${gIdx}">
+        <div class="item-text">${item.text}</div>
+        <div class="item-priority ${pCls}">${pLabel}</div>
+        <div class="toggle">
+          <button id="b_${gIdx}_Y" onclick="tap(${gIdx},'Y')">Y</button>
+          <button id="b_${gIdx}_N" onclick="tap(${gIdx},'N')">N</button>
+          <button id="b_${gIdx}_NA" onclick="tap(${gIdx},'NA')">NA</button>
+        </div>
+      </div>`;
+      idx++;
+    }
+    h += `</div>`;
+  }
+  document.getElementById("cards").innerHTML = h;
+}
+
+function tap(idx, val) {
+  status[idx] = status[idx] === val ? "" : val;
+
+  // Update button classes
+  ["Y","N","NA"].forEach(v => {
+    const b = document.getElementById(`b_${idx}_${v}`);
+    b.classList.remove("on-y","on-n","on-na");
+    if (status[idx] === v) {
+      b.classList.add(v === "Y" ? "on-y" : v === "N" ? "on-n" : "on-na");
+    }
+  });
+
+  renderScores();
+}
+
+// Init
+(function() {
+  let idx = 0;
+  for (const cat of CATS) { for (const item of cat.items) { status[idx] = ""; idx++; } }
+  renderCards();
+  renderScores();
+})();
+</script>
+</body>
+</html>

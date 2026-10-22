@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start Here</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #e8e8ed;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 40px 24px;
+  }
+
+  .letter {
+    background: #ffffff;
+    width: 100%;
+    max-width: 680px;
+    min-height: 860px;
+    padding: 80px 72px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 12px 32px rgba(0,0,0,.06);
+  }
+
+  /* Subtle top accent line */
+  .letter::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 72px; right: 72px;
+    height: 3px;
+    background: linear-gradient(90deg, #2563eb, #7c3aed);
+    border-radius: 0 0 2px 2px;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #2563eb;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    font-size: 42px;
+    line-height: 1.15;
+    color: #1a1a1a;
+    margin-bottom: 48px;
+    letter-spacing: -0.5px;
+  }
+
+  .body-text {
+    font-size: 15.5px;
+    line-height: 1.75;
+    color: #374151;
+    margin-bottom: 20px;
+  }
+
+  .body-text strong {
+    color: #1a1a1a;
+    font-weight: 600;
+  }
+
+  .doc-ref {
+    display: inline;
+    color: #2563eb;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .nudge {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #6b7280;
+    font-style: italic;
+    margin-top: 32px;
+    padding-top: 32px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  /* Bottom-anchored legal */
+  .legal {
+    margin-top: auto;
+    padding-top: 48px;
+    font-size: 10px;
+    line-height: 1.6;
+    color: #9ca3af;
+    max-width: 520px;
+  }
+  @media print {
+    body { background: white; padding: 0; }
+    .letter {
+      box-shadow: none;
+      max-width: 100%;
+      min-height: 100vh;
+      justify-content: flex-start;
+      padding-top: 120px;
+    }
+    .letter::before {
+      display: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="letter">
+
+  <div class="eyebrow">Your Strategy Pack</div>
+
+  <h1>Start here.</h1>
+
+  <p class="body-text">
+    Open <span class="doc-ref">1_Strategy/u9_launch_roadmap_render.html</span> first. It is a visual
+    timeline of everything you need to do and when, and takes two minutes to scan.
+    Then read <span class="doc-ref">1_Strategy/U1_diagnostic_report.pdf</span>: it explains
+    <em>why</em> those actions were chosen for your specific situation, what your
+    primary bottleneck is, and in what order to tackle it. Everything else in
+    this archive is the <em>how</em>: detailed playbooks you'll pull up when
+    each step comes.
+  </p>
+
+  <p class="nudge">
+    Treat this as a first draft of your strategy. Share any document with a
+    marketing professional or an AI assistant to refine it further. The
+    direction is set; you adjust the details as you go.
+  </p>
+
+  <div class="legal">
+    Generated with OpenHormozi, an open-source project that is not affiliated with
+    Alex Hormozi or Acquisition.com. All recommendations are for informational
+    purposes only and do not constitute legal, financial, or professional advice.
+    Results depend on execution, market conditions, and factors outside anyone's
+    control. Consult qualified professionals before making business, legal, or
+    financial decisions. Revenue projections are estimates based on the
+    information you provided. They are not guarantees.
+  </div>
+
+</div>
+
+</body>
+</html>

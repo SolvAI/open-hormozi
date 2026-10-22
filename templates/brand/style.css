@@ -1,0 +1,641 @@
+/* ═══════════════════════════════════════════════════════════
+   CLIENT DELIVERABLE — document styles
+   Requires: variables.css loaded first
+   Rendered by Chromium (Playwright) at A4. The running header/footer
+   and page numbers are NOT here — Chromium ignores @page margin boxes,
+   so those live in branded_pdf_processor.py as header/footer templates.
+   ═══════════════════════════════════════════════════════════ */
+
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+
+/* ── Page Container ── */
+.page {
+  background: var(--color-bg);
+  max-width: var(--page-max-width);
+  width: 100%;
+  padding: var(--page-padding-y) var(--page-padding-x);
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-body);
+  color: var(--color-text-secondary);
+  /* Hyphenation follows the lang attribute on <html> */
+  hyphens: auto;
+  text-align: left;
+}
+
+
+/* ═══════════════════════════════════════
+   COVER PAGE
+   Full-bleed navy panel, always its own sheet.
+   ═══════════════════════════════════════ */
+
+.cover {
+  position: relative;
+  background: var(--color-cover-bg);
+  color: var(--color-cover-text);
+  /* Rendered on its own zero-margin page (see branded_pdf_processor), so the
+     navy reaches the paper edge and the inset comes from padding alone. */
+  margin: 0;
+  padding: 46mm 20mm 26mm 20mm;
+  min-height: 297mm;
+  break-after: page;
+  page-break-after: always;
+  display: flex;
+  flex-direction: column;
+}
+
+.cover-brand {
+  font-family: var(--font-heading);
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-cover-text);
+  padding-left: 12px;
+  border-left: var(--rule-width) solid var(--color-accent);
+  line-height: 1.4;
+}
+
+.cover-body { margin-top: auto; }
+
+.cover-docid {
+  font-family: var(--font-mono);
+  font-size: 10pt;
+  letter-spacing: 0.14em;
+  color: var(--color-accent);
+  margin-bottom: 10px;
+}
+
+.cover-title {
+  font-family: var(--font-display);
+  font-size: 34pt;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--color-cover-text);
+  margin-bottom: 22px;
+}
+
+.cover-divider {
+  width: 64px;
+  height: 2px;
+  background: var(--color-accent);
+  margin-bottom: 22px;
+}
+
+.cover-client {
+  font-family: var(--font-heading);
+  font-size: 12pt;
+  font-weight: 600;
+  color: var(--color-cover-text);
+  margin-bottom: 4px;
+}
+
+.cover-meta {
+  font-family: var(--font-heading);
+  font-size: 9.5pt;
+  color: var(--color-cover-muted);
+  line-height: 1.6;
+}
+
+.cover-footer {
+  margin-top: 34mm;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, .14);
+  font-family: var(--font-heading);
+  font-size: 8pt;
+  letter-spacing: 0.04em;
+  color: var(--color-cover-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+
+/* ═══════════════════════════════════════
+   TYPOGRAPHY
+   ═══════════════════════════════════════ */
+
+h1, h2, h3, h4 {
+  color: var(--color-heading);
+  line-height: var(--line-height-heading);
+}
+
+/* ── H1 — only used when a document has no cover ── */
+h1 {
+  font-family: var(--font-display);
+  font-size: var(--h1-size);
+  font-weight: var(--h1-weight);
+  letter-spacing: var(--h1-tracking);
+  text-transform: var(--h1-transform);
+  margin-bottom: 6px;
+}
+
+.doc-subtitle {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--section-gap);
+  font-weight: 400;
+}
+
+/* ── H2 — major section, auto-numbered with an accent rule ── */
+.page { counter-reset: section; }
+
+h2 {
+  font-family: var(--font-display);
+  font-size: var(--h2-size);
+  font-weight: var(--h2-weight);
+  letter-spacing: var(--h2-tracking);
+  text-transform: var(--h2-transform);
+  margin-top: var(--section-gap);
+  margin-bottom: 13px;
+  padding-left: 13px;
+  border-left: var(--rule-width) solid var(--color-accent);
+  counter-increment: section;
+}
+
+h2::before {
+  content: counter(section) ". ";
+  color: var(--color-accent);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.82em;
+}
+
+/* First section shouldn't push away from the top of its page */
+.page > h2:first-of-type { margin-top: 0; }
+
+/* ── H3 — subsection ── */
+h3 {
+  font-family: var(--font-heading);
+  font-size: var(--h3-size);
+  font-weight: var(--h3-weight);
+  letter-spacing: var(--h3-tracking);
+  text-transform: var(--h3-transform);
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+
+/* ── H4 — eyebrow label ── */
+h4 {
+  font-family: var(--font-heading);
+  font-size: var(--h4-size);
+  font-weight: var(--h4-weight);
+  letter-spacing: var(--h4-tracking);
+  text-transform: var(--h4-transform);
+  margin-top: 18px;
+  margin-bottom: 7px;
+  color: var(--color-accent-dark);
+}
+
+
+/* ═══════════════════════════════════════
+   INLINE TEXT
+   ═══════════════════════════════════════ */
+
+p {
+  margin-bottom: var(--paragraph-gap);
+  color: var(--color-text-secondary);
+}
+
+/* Section lead-in — one line that sets up the section */
+p.lead {
+  font-family: var(--font-display);
+  font-size: 12pt;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+
+/* Closing takeaway — the sentence that matters */
+p.takeaway {
+  background: var(--color-accent-light);
+  border-left: var(--rule-width) solid var(--color-accent);
+  padding: 11px 15px;
+  margin: 16px 0 var(--paragraph-gap) 0;
+  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+  color: var(--color-accent-dark);
+  font-weight: 500;
+  break-inside: avoid;
+}
+
+strong { color: var(--color-text); font-weight: 650; }
+em     { font-style: italic; }
+
+u {
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+  text-underline-offset: 3px;
+}
+
+mark {
+  background: var(--color-highlight-bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--color-text);
+}
+
+
+/* ═══════════════════════════════════════
+   LINKS
+   ═══════════════════════════════════════ */
+
+a {
+  color: var(--color-link);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+a:hover {
+  color: var(--color-link-hover);
+  border-bottom-color: var(--color-link-hover);
+}
+
+
+/* ═══════════════════════════════════════
+   LISTS
+   ═══════════════════════════════════════ */
+
+ul, ol {
+  margin-bottom: var(--paragraph-gap);
+  padding-left: var(--list-indent);
+}
+
+ul { list-style-type: none; }
+
+ul > li {
+  position: relative;
+  padding-left: 15px;
+}
+
+ul > li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: .62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+ol { list-style-type: decimal; }
+
+li {
+  margin-bottom: 5px;
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-body);
+}
+
+li > ul,
+li > ol { margin-top: 5px; margin-bottom: 0; }
+
+li > ul > li::before {
+  background: var(--color-border);
+  width: 4px;
+  height: 4px;
+}
+
+/* Step list — numbered actions with a prominent counter */
+ol.steps {
+  list-style: none;
+  padding-left: 0;
+  counter-reset: step;
+}
+
+ol.steps > li {
+  position: relative;
+  counter-increment: step;
+  padding-left: 34px;
+  margin-bottom: 10px;
+  break-inside: avoid;
+}
+
+ol.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-size: 9pt;
+  font-weight: 700;
+  text-align: center;
+  line-height: 22px;
+}
+
+
+/* ═══════════════════════════════════════
+   TABLE
+   ═══════════════════════════════════════ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--paragraph-gap);
+  font-size: var(--font-size-sm);
+  border: var(--border-width) solid var(--color-table-border);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+thead th {
+  background: var(--color-table-header-bg);
+  color: var(--color-table-header-text);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  text-align: left;
+  padding: 9px 13px;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+tbody td {
+  padding: 8px 13px;
+  border-bottom: var(--border-width) solid var(--color-border-light);
+  vertical-align: top;
+  color: var(--color-text-secondary);
+}
+
+tbody tr:nth-child(even) { background: var(--color-table-stripe); }
+tbody tr:last-child td   { border-bottom: none; }
+
+/* Numeric columns read better right-aligned and tabular */
+td.num, th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ═══════════════════════════════════════
+   BLOCKQUOTE
+   ═══════════════════════════════════════ */
+
+blockquote {
+  border-left: var(--rule-width) solid var(--color-blockquote-border);
+  background: var(--color-blockquote-bg);
+  padding: 12px 17px;
+  margin: 0 0 var(--paragraph-gap) 0;
+  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+  color: var(--color-blockquote-text);
+  font-family: var(--font-display);
+  font-style: italic;
+}
+
+blockquote p { margin-bottom: 0; color: inherit; }
+
+
+/* ═══════════════════════════════════════
+   CODE
+   ═══════════════════════════════════════ */
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--color-code-bg);
+  border: var(--border-width) solid var(--color-code-border);
+  padding: 1px 5px;
+  border-radius: var(--border-radius-sm);
+  color: var(--color-code-text);
+}
+
+pre {
+  background: var(--color-code-bg);
+  border: var(--border-width) solid var(--color-code-border);
+  border-radius: var(--border-radius);
+  padding: 14px 16px;
+  margin-bottom: var(--paragraph-gap);
+  overflow-x: auto;
+  font-size: var(--font-size-sm);
+}
+
+pre code { background: none; border: none; padding: 0; font-size: inherit; }
+
+
+/* ═══════════════════════════════════════
+   HORIZONTAL RULE
+   The LLM emits <hr> as a section break; branded_pdf_processor turns it
+   into a page break at print time (see the print block below).
+   ═══════════════════════════════════════ */
+
+hr {
+  border: none;
+  height: 1px;
+  background: var(--color-hr);
+  margin: var(--section-gap) 0;
+}
+
+
+/* ═══════════════════════════════════════
+   CALLOUT BOX
+   ═══════════════════════════════════════ */
+
+.callout {
+  display: flex;
+  gap: 11px;
+  background: var(--color-callout-bg);
+  border: var(--border-width) solid var(--color-callout-border);
+  border-left: var(--rule-width) solid var(--color-callout-icon);
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+  padding: 13px 15px;
+  margin-bottom: var(--paragraph-gap);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  break-inside: avoid;
+}
+
+.callout-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-callout-icon);
+}
+
+.callout p:last-child { margin-bottom: 0; }
+
+.callout-warn {
+  background: var(--color-highlight-bg);
+  border-color: var(--color-highlight-border);
+  border-left-color: #c99a1f;
+}
+
+
+/* ═══════════════════════════════════════
+   METRIC CARDS
+   ═══════════════════════════════════════ */
+
+.metric-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+  margin: 4px 0 16px 0;
+  break-inside: avoid;
+}
+
+/* 2-card and 4-card rows shouldn't leave a ragged gap */
+.metric-row:has(.metric:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); }
+.metric-row:has(.metric:nth-child(4):last-child) { grid-template-columns: repeat(4, 1fr); }
+
+.metric {
+  background: var(--color-bg-secondary);
+  border: var(--border-width) solid var(--color-border-light);
+  border-top: 2px solid var(--color-accent);
+  border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
+  padding: 13px 14px;
+  text-align: center;
+}
+
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 19pt;
+  font-weight: 600;
+  color: var(--color-heading);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-label {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+
+/* ═══════════════════════════════════════
+   DEFINITION LIST
+   ═══════════════════════════════════════ */
+
+dl { margin-bottom: var(--paragraph-gap); }
+
+dt {
+  font-family: var(--font-heading);
+  font-weight: 650;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  margin-top: 10px;
+}
+
+dd {
+  color: var(--color-text-secondary);
+  margin-left: 0;
+  padding-left: 15px;
+  border-left: 2px solid var(--color-border-light);
+  margin-top: 3px;
+  margin-bottom: 6px;
+  font-size: var(--font-size-sm);
+}
+
+
+/* ═══════════════════════════════════════
+   BADGE / TAG
+   ═══════════════════════════════════════ */
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-xs);
+  font-weight: 650;
+  padding: 2px 9px;
+  border-radius: 11px;
+  background: var(--color-accent-light);
+  color: var(--color-accent-dark);
+  letter-spacing: .3px;
+}
+
+
+/* ═══════════════════════════════════════
+   IMAGE PLACEHOLDER / FIGURES
+   ═══════════════════════════════════════ */
+
+.img-placeholder {
+  background: var(--color-bg-secondary);
+  border: var(--border-width) dashed var(--color-border);
+  border-radius: var(--border-radius);
+  padding: 30px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--paragraph-gap);
+}
+
+.figure {
+  margin: 20px 0;
+  text-align: center;
+  break-inside: avoid;
+}
+
+.figure img {
+  width: 100%;
+  max-height: 215mm;
+  height: auto;
+  object-fit: contain;
+  border: var(--border-width) solid var(--color-border-light);
+  border-radius: var(--border-radius);
+}
+
+.figure figcaption {
+  margin-top: 7px;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+
+/* ═══════════════════════════════════════
+   PRINT
+   ═══════════════════════════════════════ */
+
+@media print {
+  .page { padding: 0; max-width: 100%; }
+
+  /* Never strand a heading at the foot of a page */
+  h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
+  h2 { break-before: auto; }
+
+  /* Never break these across sheets */
+  table, .metric-row, .callout, pre, blockquote,
+  .figure, p.takeaway, ol.steps > li { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Orphan/widow control — a single trailing line reads as a mistake */
+  p, li { orphans: 3; widows: 3; }
+
+  /* Section dividers become page breaks */
+  hr { visibility: hidden; height: 0; margin: 0; break-after: page; page-break-after: always; }
+
+  a { color: var(--color-text-secondary); border-bottom: none; }
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    word-break: break-all;
+  }
+  a[href^="#"]::after { content: none; }
+}
+
+
+/* ═══════════════════════════════════════
+   PAGE SIZING (PDF render)
+   Margins are also passed to Playwright; keeping them here means the
+   .html fallback prints identically from a browser.
+   ═══════════════════════════════════════ */
+
+@page {
+  size: A4;
+  margin: 18mm 16mm;
+}

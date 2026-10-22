@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f2f5;
+    padding: 36px;
+  }
+  .container { max-width: 1140px; margin: 0 auto; }
+  h1 {
+    font-size: 20px; font-weight: 700; color: #1a1a2e;
+    text-align: center; margin-bottom: 28px;
+  }
+  .grid {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .phone {
+    width: 320px;
+    background: #1a1a2e;
+    border-radius: 32px;
+    padding: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  }
+  .phone-screen {
+    background: white;
+    border-radius: 22px;
+    overflow: hidden;
+  }
+  .phone-bar {
+    background: #fafafa;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid #eee;
+  }
+  .phone-bar .dot { width: 6px; height: 6px; border-radius: 50%; background: #ccc; }
+  .phone-bar .name { font-size: 11px; font-weight: 600; color: #333; margin-left: 4px; }
+  .phone-bar .badge {
+    font-size: 9px; color: #999; margin-left: auto;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .ad-image {
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+  }
+  .ad-image.story { aspect-ratio: 9/16; }
+  .ad-image.feed { aspect-ratio: 1; }
+  .ad-image.carousel { aspect-ratio: 1; }
+  .ad-image .visual-desc {
+    font-size: 12px;
+    color: #64748b;
+    background: rgba(255,255,255,0.85);
+    padding: 10px 14px;
+    border-radius: 8px;
+    line-height: 1.5;
+    max-width: 240px;
+  }
+  .ad-image .format-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .ad-text {
+    padding: 12px 14px;
+  }
+  .ad-primary {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #1c1e21;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .ad-headline-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: #f5f6f7;
+    border-top: 1px solid #e4e6ea;
+  }
+  .ad-headline-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1c1e21;
+    flex: 1;
+  }
+  .ad-cta-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1877f2;
+    background: #e7f3ff;
+    padding: 5px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .platform-label {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    margin-top: 10px;
+  }
+  .footer {
+    text-align: center;
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: 28px;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Social Ads — Creative Mockups</h1>
+    <div class="grid" id="grid"></div>
+    <div class="footer">Creative Mockups — Non-binding Previews</div>
+  </div>
+
+  <script>
+    const DATA = __DATA_PLACEHOLDER__;
+    const grid = document.getElementById('grid');
+
+    const platformNames = {
+      'instagram_feed': 'Instagram Feed',
+      'instagram_story': 'Instagram Story',
+      'instagram_reel': 'Instagram Reel',
+      'facebook_feed': 'Facebook Feed',
+      'facebook_story': 'Facebook Story',
+      'linkedin_feed': 'LinkedIn Feed',
+      'tiktok': 'TikTok',
+    };
+
+    (DATA.mockups || []).forEach(mock => {
+      const phone = document.createElement('div');
+      phone.className = 'phone';
+
+      const isStory = (mock.platform || '').includes('story') ||
+                      (mock.platform || '').includes('reel') ||
+                      (mock.platform || '').includes('tiktok');
+      const aspectClass = isStory ? 'story' : 'feed';
+      const platformLabel = platformNames[mock.platform] || mock.platform || 'Social Ad';
+      const format = (mock.format || 'static').toUpperCase();
+
+      phone.innerHTML =
+        '<div class="phone-screen">' +
+          '<div class="phone-bar">' +
+            '<div class="dot"></div><div class="dot"></div>' +
+            '<div class="name">Your Brand</div>' +
+            '<div class="badge">Sponsored</div>' +
+          '</div>' +
+          '<div class="ad-image ' + aspectClass + '">' +
+            '<div class="format-badge">' + esc(format) + '</div>' +
+            '<div class="visual-desc">📷 ' + esc(mock.visual_description || 'Visual to produce') + '</div>' +
+          '</div>' +
+          '<div class="ad-text">' +
+            '<div class="ad-primary">' + esc(mock.primary_text || '') + '</div>' +
+          '</div>' +
+          '<div class="ad-headline-row">' +
+            '<div class="ad-headline-text">' + esc(mock.headline || '') + '</div>' +
+            '<div class="ad-cta-btn">' + esc(mock.cta || 'Learn More') + '</div>' +
+          '</div>' +
+        '</div>';
+
+      const wrapper = document.createElement('div');
+      wrapper.style.textAlign = 'center';
+      wrapper.appendChild(phone);
+
+      const label = document.createElement('div');
+      label.className = 'platform-label';
+      label.textContent = platformLabel;
+      wrapper.appendChild(label);
+
+      grid.appendChild(wrapper);
+    });
+
+    function esc(t) { return (t||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  </script>
+</body>
+</html>

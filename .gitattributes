@@ -1,0 +1,9 @@
+* text=auto
+*.bat text eol=crlf
+*.sh text eol=lf
+*.command text eol=lf
+*.png binary
+*.pdf binary
+*.xlsx binary
+*.docx binary
+*.woff2 binary
