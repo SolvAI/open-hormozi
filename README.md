@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot-generation.png" alt="A strategy being generated: 7 of 19 documents written, with cost and time so far" width="860">
+  <img src="docs/screenshot-generation.png" alt="A finished strategy: the diagnosed bottleneck, cost and time, and a preview of every document" width="860">
 </p>
 
 > **Not affiliated with Alex Hormozi or Acquisition.com.** OpenHormozi is an independent,
@@ -103,8 +103,8 @@ The software is free. Generation uses your Anthropic API credit:
 
 | | Default models |
 |---|---|
-| Cost per strategy | about **$5 to $8** |
-| Time per strategy | about **40 minutes**, in the background |
+| Cost per strategy | about **$3 to $8** (a 19-document run cost $3.54) |
+| Time per strategy | about **25 to 40 minutes**, in the background |
 | Documents | 18 to 31, depending on the business |
 
 The cost shows live on the strategy page. You can change the model used for each role in
@@ -121,9 +121,12 @@ writing, Haiku 5.5 for the summaries passed between documents.
 
 ## Manage your strategies
 
-<img src="docs/screenshot-build-sheet.png" alt="Documents ticking off one by one, with the one being written highlighted" width="560" align="right">
+<img src="docs/screenshot-build-sheet.png" alt="Finished documents show a preview; the one being written is outlined in yellow" width="560" align="right">
 
-- Watch each document get written, open finished PDFs before the run ends.
+- Watch each document get written. Finished ones show a preview (report pages, persona card,
+  diagrams, landing page) as soon as they're done.
+- Read every document inside the app: reports as a web page or PDF, the landing page and
+  roadmap live, visuals and diagrams at full size. Arrow keys move between documents.
 - Strategies run one at a time; start several and they queue.
 - **Cancel** a run at any point. **Resume** later and only the missing documents are generated.
 - **Edit answers and run again** to compare versions of your strategy.
@@ -199,7 +202,7 @@ lists every question and its allowed answers.
 ## Project layout
 
 ```
-app/          local web app: API, job queue, UI (plain HTML, CSS and JS, no build step)
+app/          local web app: API, job queue, document previews, UI (plain HTML, CSS and JS, no build step)
 engine/       the strategy pipeline
   form/         the 49 questions and their validation
   pipeline/     diagnostic, document planning and orchestration

@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from app import settings, store
+from app import previews, settings, store
 from app.errors import describe
 from app.paths import EXAMPLE_FORM, JOBS_DIR, STATIC_DIR, ensure_dirs
 from app.worker import Worker
@@ -83,6 +83,17 @@ async def local_only(request: Request, call_next):
     return await call_next(request)
 
 
+@app.middleware("http")
+async def revalidate_ui(request: Request, call_next):
+    """Browsers re-check the UI's CSS and JS on each load, so an update shows
+    up on reload. Unchanged files come back as cheap 304s."""
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/static/") and not path.startswith("/static/fonts/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 def _error(status: int, code: str, detail: str | None = None) -> JSONResponse:
     return JSONResponse({"error": describe(code), "detail": detail}, status_code=status)
 
@@ -119,11 +130,13 @@ def _public(job: dict, full: bool = False) -> dict:
         "primary_channel": job["primary_channel"],
         "has_zip": job["has_zip"],
         "resumable": job["status"] in store.RESUMABLE,
+        "thumbs": _thumbs(job["id"], docs),
     }
     if full:
         data["docs"] = docs
         data["files"] = _list_files(job["id"])
         data["form"] = job["form"]
+        data["diagnosis"] = _diagnosis(job["id"])
     return data
 
 
@@ -145,13 +158,55 @@ def _list_files(job_id: str) -> list[dict]:
             continue
         arcname = _get_arcname(f.name)
         folder = arcname.split("/", 1)[0] if "/" in arcname else "Other"
+        stat = f.stat()
+        preview = previews.kind_of(f)
+        # The reader shows documents as a web page when there's an HTML version
+        # (a report's screen copy, a landing page...), with the PDF one click away.
+        readable = preview in ("report", "page", "web")
+        web, pdf = f.with_suffix(".html"), f.with_suffix(".pdf")
         listed.append({
             "name": f.name,
             "folder": folder,
             "kind": f.suffix.lstrip(".").lower(),
-            "size": f.stat().st_size,
+            "size": stat.st_size,
+            "v": int(stat.st_mtime),
+            "preview": preview,
+            "parts": previews.part_count(preview),
+            "web": web.name if readable and web.exists() else None,
+            "pdf": pdf.name if readable and pdf.exists() else None,
         })
     return listed
+
+
+def _thumbs(job_id: str, docs: list[dict]) -> list[dict]:
+    """Up to three finished visuals (persona card, pricing table, chart...) for the strategy list."""
+    docs_dir = JOBS_DIR / job_id / "docs"
+    if not docs_dir.exists():
+        return []
+    order = {d["id"].lower(): i for i, d in enumerate(docs) if d["status"] == "done"}
+    picks = []
+    for f in docs_dir.glob("*.png"):
+        doc = f.stem.split("_", 1)[0].lower()
+        if doc in order and f.stem.endswith(("_visual", "_chart")):
+            picks.append((order[doc], f.name, int(f.stat().st_mtime)))
+    return [{"name": name, "v": v} for _, name, v in sorted(picks)[:3]]
+
+
+def _diagnosis(job_id: str) -> dict | None:
+    """The diagnostic's verdict, once it has run."""
+    path = JOBS_DIR / job_id / "diagnostic" / "strat_triggers.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    meta = data.get("meta") or {}
+    channels = data.get("channels") or {}
+    return {
+        "maturity": meta.get("maturity"),
+        "bottleneck": meta.get("bottleneck"),
+        "primary_channel": channels.get("primary"),
+        "secondary_channel": channels.get("secondary"),
+    }
 
 
 def _get_job(job_id: str) -> dict:
@@ -276,7 +331,27 @@ def create_job(body: JobIn):
 
 @app.get("/api/jobs/{job_id}")
 def get_job(job_id: str) -> dict:
-    return _public(_get_job(job_id), full=True)
+    data = _public(_get_job(job_id), full=True)
+    _warm_previews(job_id, data)
+    return data
+
+
+_PAGE_ORDER = ("u", "ch", "fc", "bm", "mt")
+
+
+def _warm_previews(job_id: str, data: dict) -> None:
+    """Render the previews of finished documents in the background, in the
+    order the strategy page shows them, so they're ready when scrolled to."""
+    done = {d["id"].lower() for d in data["docs"] if d["status"] == "done"}
+
+    def page_order(doc: str) -> tuple:
+        prefix, number = re.match(r"([a-z]+)(\d+)", doc).groups()
+        return (_PAGE_ORDER.index(prefix) if prefix in _PAGE_ORDER else 9, int(number))
+
+    docs_dir = JOBS_DIR / job_id / "docs"
+    wanted = [f for f in data["files"] if f["parts"] and f["name"].split("_", 1)[0].lower() in done]
+    wanted.sort(key=lambda f: page_order(f["name"].split("_", 1)[0].lower()))
+    previews.warm([docs_dir / f["name"] for f in wanted])
 
 
 @app.patch("/api/jobs/{job_id}")
@@ -349,7 +424,29 @@ def job_file(job_id: str, name: str):
     path = (docs_dir / name).resolve()
     if path.parent != docs_dir or not path.is_file():
         raise HTTPException(404, "File not found")
-    return FileResponse(path, content_disposition_type="inline", filename=path.name)
+    headers = {}
+    if path.suffix == ".html":
+        # Generated pages run in a sandbox with their own origin, so their
+        # scripts can't reach this app's API, in the reader or in a new tab.
+        headers["Content-Security-Policy"] = "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms"
+    return FileResponse(path, content_disposition_type="inline", filename=path.name, headers=headers)
+
+
+@app.get("/api/jobs/{job_id}/previews/{name}/{part}")
+def job_preview(job_id: str, name: str, part: int):
+    _get_job(job_id)
+    docs_dir = (JOBS_DIR / job_id / "docs").resolve()
+    path = (docs_dir / name).resolve()
+    if path.parent != docs_dir or not path.is_file():
+        raise HTTPException(404, "File not found")
+    kind = previews.kind_of(path)
+    if not 0 <= part < previews.part_count(kind):
+        raise HTTPException(404, "No preview for this file")
+    try:
+        out = previews.get(path, kind, part)
+    except Exception:
+        raise HTTPException(404, "The preview could not be rendered")
+    return FileResponse(out, media_type="image/jpeg")
 
 
 # ─── UI ─────────────────────────────────────────────────────────

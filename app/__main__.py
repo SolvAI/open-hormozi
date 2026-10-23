@@ -56,6 +56,11 @@ def ensure_browser() -> None:
 def find_port(host: str, preferred: int) -> int:
     for port in range(preferred, preferred + 20):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # Like uvicorn, ignore connections left in TIME_WAIT by the last run,
+            # so a quick restart keeps its port (and the browser's saved draft).
+            # Windows doesn't need it, and there it would allow a port in use.
+            if os.name != "nt":
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 s.bind((host, port))
                 return port

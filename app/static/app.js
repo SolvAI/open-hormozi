@@ -12,16 +12,79 @@ const state = {
   jobs: null,
   statuses: new Map(),   // job id → last seen status, to toast transitions
   route: null,
-  ui: { renaming: false, logOpen: false, log: '' },
+  ui: { renaming: false, logOpen: false, log: '', menuOpen: false, sig: '' },
+  views: new Map(),      // "jobId:docId" → index of the view shown in that card
+  cards: new Map(),      // "jobId:docId" → { sig, el }, so polling never reloads previews
+  readerSig: '',         // what the reader shows, so polling doesn't reload it
+  readerPushed: false,   // the reader was opened from the strategy page
+  readerReturn: null,    // element to focus again when the reader closes
 };
 
 const TIERS = [
-  { prefix: 'U', title: 'Strategy' },
-  { prefix: 'CH', title: 'Acquisition channels' },
-  { prefix: 'FC', title: 'Funnel' },
-  { prefix: 'BM', title: 'Sales and operations' },
-  { prefix: 'MT', title: 'Proof and tools' },
+  { prefix: 'U', title: 'Strategy', blurb: 'The foundation. Every other document builds on these.' },
+  { prefix: 'CH', title: 'Acquisition channels', blurb: 'Where the next clients come from, picked for this business.' },
+  { prefix: 'FC', title: 'Funnel', blurb: 'The path from first click to a booked call or a sale.' },
+  { prefix: 'BM', title: 'Sales and operations', blurb: 'Closing, delivering and keeping clients.' },
+  { prefix: 'MT', title: 'Proof and tools', blurb: 'Credibility, and the systems that run in the background.' },
 ];
+
+// Name and one-line summary of every document the engine can write.
+const DOC_INFO = {
+  U1: ['Diagnostic Report', 'Where the business stands, the bottleneck that limits growth, and the priorities ranked by impact.'],
+  U2: ['Avatar & ICP', 'Who buys, what pushes them to buy now, where to find them and the words they use.'],
+  U3: ['Grand Slam Offer', 'The offer stack, its name, bonuses and guarantee, built on the Value Equation.'],
+  U4: ['Pricing & Packaging', 'Price tiers, anchoring and the comparison table, with a calculator to test the numbers.'],
+  U5: ['Positioning & Messaging', 'How you differ from the alternatives, the angles to lead with, and where you sit on the map.'],
+  U6: ['Sales Funnel Blueprint', 'Every step from first contact to paying client, with the automations in between.'],
+  U7: ['Financial Model', 'Revenue projections, break-even, acquisition cost against lifetime value.'],
+  U8: ['KPI & Tracking Framework', 'The numbers to watch at each stage, how to track them and when to act on them.'],
+  U9: ['Launch Roadmap', 'Week by week actions with milestones and dependencies.'],
+  CH1: ['SEA Strategy (Google Ads)', 'Keywords, campaign structure, ad copy, bids and budget, with a keyword sheet.'],
+  CH2: ['Social Ads Strategy', 'Platform choice, targeting, creative briefs and budget.'],
+  CH3: ['Cold Outbound Playbook', 'Target lists, email and LinkedIn sequences, and call scripts.'],
+  CH4: ['Organic Content Strategy', 'Content pillars, a publishing calendar and how to reuse each piece.'],
+  CH5: ['Local SEO & Maps Strategy', 'Google Business Profile, directories, reviews and local pages.'],
+  CH6: ['Referral & Partnership Strategy', 'Partner profiles, incentives and the messages that recruit them.'],
+  CH7: ['Marketplace Strategy', 'Which platform to list on, how to write the listing and how to price it.'],
+  FC1: ['Landing Page', 'Conversion copy section by section, plus a ready-to-edit HTML page.'],
+  FC2: ['Lead Magnet', 'Topic, outline and delivery, plus the lead magnet itself as a PDF.'],
+  FC3: ['Webinar / VSL Script', 'A complete script: hook, teaching, offer and close.'],
+  FC4: ['Email Sequences', 'Every nurture, follow-up and onboarding email written out, with a map of the sequences.'],
+  FC5: ['Retargeting Strategy', 'Audiences, creatives, budget and frequency caps.'],
+  BM1: ['Sales Playbook', 'Discovery call script, objection handling and how to present the proposal.'],
+  BM2: ['Booking & Scheduling Flow', 'Booking setup, reminders and no-show recovery.'],
+  BM3: ['Local Visibility Baseline', 'Foot traffic, signage and neighborhood partnerships.'],
+  BM4: ['On-Site Experience & Upsell', 'Customer touchpoints, staff scripts and upsells, with a staff cheat sheet.'],
+  BM5: ['Retention, Loyalty & Referral Playbook', 'Loyalty mechanics, rewards and a referral program clients actually use.'],
+  BM6: ['Client Operations Playbook', 'Onboarding, scope, contracts and the rhythm of client communication.'],
+  BM7: ['Online Purchase Optimization', 'Product pages, checkout and cart recovery, with a page audit checklist.'],
+  MT1: ['Proof & Credibility Kit', 'Case study formats, testimonial scripts and the proof to collect first.'],
+  MT2: ['Proof Generation Plan', 'How to ask for reviews and turn client wins into case studies.'],
+  MT3: ['Automation & Tech Stack Guide', 'The tools to use, the setup checklist and the automations to build.'],
+};
+
+// What each document's companion files are called on its card.
+const VISUAL_LABEL = {
+  U2: 'Persona card', U4: 'Pricing table', U5: 'Positioning map', BM4: 'Staff cheat sheet',
+  BM5: 'Loyalty card', BM7: 'Page wireframe', CH1: 'Ad preview', CH2: 'Ad mockups',
+  FC5: 'Retargeting ads', MT1: 'Case studies',
+};
+const RENDER_LABEL = {
+  U9: 'Roadmap', FC1: 'Landing page', FC2: 'Lead magnet', FC4: 'Email preview', BM7: 'Audit checklist',
+};
+// Cards open on their most visual view, then the report. The Value Equation
+// image is the same for everyone, so it comes after the report.
+const VIEW_RANK = { render: 0, visual: 1, chart: 1, report: 2, diagram: 3, value: 3, sheet: 4 };
+
+const BOTTLENECK = {
+  visibility: 'Visibility', lead_generation: 'Lead generation', conversion: 'Conversion',
+  pricing: 'Pricing', retention: 'Retention', wrong_clients: 'Wrong clients',
+};
+const MATURITY = { STARTER: 'Starting out', GROWING: 'Growing', ESTABLISHED: 'Established', PIVOT: 'Pivoting' };
+const CHANNEL = {
+  CH1: 'Google Ads', CH2: 'Social ads', CH3: 'Cold outbound', CH4: 'Organic content',
+  CH5: 'Local SEO', CH6: 'Referrals and partners', CH7: 'Marketplaces',
+};
 
 const STATUS_LABEL = {
   queued: 'Queued',
@@ -41,6 +104,10 @@ function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function icon(name) {
+  return `<svg class="i" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+}
+
 function fmtMoney(usd) {
   return '$' + (usd || 0).toFixed(usd >= 100 ? 0 : 2);
 }
@@ -50,7 +117,7 @@ function fmtDuration(seconds) {
   if (s < 60) return `${s} s`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m} min`;
-  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`;
+  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
 }
 
 function fmtDate(iso) {
@@ -114,6 +181,14 @@ async function api(method, path, body) {
   return data;
 }
 
+function fileUrl(job, file) {
+  return `/api/jobs/${job.id}/files/${encodeURIComponent(file.name)}?v=${file.v}`;
+}
+
+function previewUrl(job, file, part) {
+  return `/api/jobs/${job.id}/previews/${encodeURIComponent(file.name)}/${part}?v=${file.v}`;
+}
+
 // ─── Toasts ─────────────────────────────────────────────────
 
 function toast({ kind = 'info', title, message = '', actions = [], sticky = false }) {
@@ -124,7 +199,7 @@ function toast({ kind = 'info', title, message = '', actions = [], sticky = fals
     <strong>${esc(title)}</strong>
     <button class="toast-close" aria-label="Dismiss">×</button>
     ${message ? `<p>${esc(message)}</p>` : ''}
-    ${actions.length ? `<div class="btn-row">${actions.map((a, i) => `<button class="btn ${i === 0 ? 'btn-primary' : 'btn-quiet'}" data-i="${i}">${esc(a.label)}</button>`).join('')}</div>` : ''}`;
+    ${actions.length ? `<div class="btn-row">${actions.map((a, i) => `<button class="btn ${i === 0 ? 'btn-primary' : ''}" data-i="${i}">${esc(a.label)}</button>`).join('')}</div>` : ''}`;
   const close = () => el.remove();
   el.querySelector('.toast-close').onclick = close;
   el.querySelectorAll('[data-i]').forEach(b => {
@@ -221,6 +296,32 @@ async function deleteJob(id, name) {
   } catch (err) { showError(err); }
 }
 
+// Images fade in once loaded. Tall diagrams start at the top, at a readable
+// size, and run off the bottom edge. A preview that can't be rendered leaves a note.
+function wireImages(root) {
+  root.querySelectorAll('.slide img, .job-cover img').forEach(img => {
+    const loaded = () => {
+      img.classList.add('is-loaded');
+      const slide = img.closest('.slide-image');
+      if (slide && img.naturalHeight > img.naturalWidth * 1.15) slide.classList.add('is-tall');
+    };
+    const failed = () => {
+      const slide = img.closest('.slide');
+      if (slide) slide.outerHTML = '<div class="slide slide-empty">No preview for this file. Open it with the buttons below.</div>';
+      else img.remove();
+    };
+    if (img.complete && img.naturalWidth) loaded();
+    else {
+      img.addEventListener('load', loaded, { once: true });
+      img.addEventListener('error', failed, { once: true });
+    }
+  });
+}
+
+function ghostHtml(label) {
+  return `<div class="slide"><div class="ghost"><i></i><i></i><i></i><i></i><i></i><i></i></div>${label ? `<span class="ghost-label">${esc(label)}</span>` : ''}</div>`;
+}
+
 // ─── Strategy list ──────────────────────────────────────────
 
 function progressOf(job) {
@@ -230,70 +331,129 @@ function progressOf(job) {
 
 function jobProgressText(job) {
   if (job.status === 'queued') return 'Waiting to start';
-  if (job.error && !isActive(job)) return `${job.doc_done} of ${job.doc_total || '?'} documents. ${job.error.title}.`;
+  if (job.error && !isActive(job)) return job.error.title;
   if (!job.doc_total) return job.status === 'running' ? 'Diagnosing the business' : 'No documents yet';
-  return `${job.doc_done} of ${job.doc_total} documents`;
+  if (job.status === 'running' && job.phase === 'documents' && job.current) return `Writing ${job.current}`;
+  if (job.status === 'running' && job.phase === 'packaging') return 'Packaging the ZIP';
+  return job.finished_at ? `${endVerb(job)} ${fmtDate(job.finished_at)}` : '';
+}
+
+function endVerb(job) {
+  return { cancelled: 'Cancelled', failed: 'Stopped', interrupted: 'Stopped' }[job.status] || 'Finished';
+}
+
+// The parts of a job that change every poll while it runs. They are patched in
+// place so the page (and its images) isn't rebuilt every few seconds.
+function liveFree(job) {
+  const { elapsed_s, cost_usd, ...rest } = job;
+  return rest;
+}
+
+function patchLive(job) {
+  view.querySelectorAll(`[data-live$=":${job.id}"]`).forEach(el => {
+    const what = el.dataset.live.split(':')[0];
+    if (what === 'elapsed') el.textContent = fmtDuration(job.elapsed_s);
+    if (what === 'cost') el.textContent = fmtMoney(job.cost_usd);
+  });
+}
+
+function coverHtml(job) {
+  const thumbs = job.thumbs || [];
+  if (!thumbs.length) {
+    const label = job.status === 'running' ? 'Writing now' : job.status === 'queued' ? 'Queued' : '';
+    return `<a class="job-cover empty ${job.status === 'running' ? 'is-running' : ''}" href="#/job/${job.id}" tabindex="-1" aria-hidden="true" style="position:relative">${ghostHtml(label)}</a>`;
+  }
+  return `<a class="job-cover n${thumbs.length}" href="#/job/${job.id}" tabindex="-1" aria-hidden="true">
+    ${thumbs.map(t => `<img alt="" loading="lazy" src="/api/jobs/${job.id}/files/${encodeURIComponent(t.name)}?v=${t.v}">`).join('')}
+  </a>`;
 }
 
 function renderList() {
   const jobs = state.jobs || [];
   const s = state.settings;
+  const sig = JSON.stringify(['list', jobs.map(liveFree), !!s?.has_api_key]);
+  if (sig === state.ui.sig) { jobs.forEach(patchLive); return; }
+  state.ui.sig = sig;
 
   if (!jobs.length) {
     view.innerHTML = `
-      ${s && !s.has_api_key ? `
-        <div class="setup-note">
-          <div><strong>First, add your Anthropic API key.</strong><p>OpenHormozi runs on your own Anthropic account. Generation costs go to your key, nothing else is charged.</p></div>
-          <a class="btn btn-primary" href="#/settings">Add API key</a>
-        </div>` : ''}
-      <section class="intro">
-        <div>
-          <h1>Your whole acquisition strategy from one form.</h1>
-          <p class="lede">Answer questions about your business. OpenHormozi diagnoses your real bottleneck with Alex Hormozi's frameworks, then writes your offer, pricing, funnel, sales scripts, channel playbooks and launch roadmap. Everything is generated on this computer with your own Anthropic API key.</p>
-          <div class="btn-row">
-            <a class="btn btn-primary" href="#/new">Start a strategy</a>
-            <a class="btn" href="#/new?example=1">Try the example answers</a>
+      <section class="band"><div class="wrap">
+        ${s && !s.has_api_key ? `
+          <div class="setup-note">
+            <div><strong>First, add your Anthropic API key.</strong><p>OpenHormozi runs on your own Anthropic account. Generation costs go to your key; nothing else is charged.</p></div>
+            <a class="btn" href="#/settings">${icon('key')}Add API key</a>
+          </div>` : ''}
+        <div class="intro">
+          <div>
+            <h1>Your whole acquisition strategy from one form.</h1>
+            <p class="lede">Answer questions about your business. OpenHormozi diagnoses your real bottleneck with Alex Hormozi's frameworks, then writes your offer, pricing, funnel, sales scripts, channel playbooks and launch roadmap. Everything runs on this computer with your own Anthropic API key.</p>
+            <div class="btn-row">
+              <a class="btn btn-primary" href="#/new">${icon('plus')}Start a strategy</a>
+              <a class="btn" href="#/new?example=1">Try the example answers</a>
+            </div>
           </div>
+          <dl class="intro-facts">
+            <div><dt>18 to 31 documents</dt><dd>Picked for your business model and channels.</dd></div>
+            <div><dt>25 to 40 minutes</dt><dd>In the background. You can close this tab.</dd></div>
+            <div><dt>$3 to $8 per strategy</dt><dd>Of Anthropic API credit with the default models.</dd></div>
+          </dl>
         </div>
-        <div class="facts">
-          <div class="fact"><div class="display">18 to 31</div><p>documents, picked for your business model and channels</p></div>
-          <div class="fact"><div class="display">~40 min</div><p>per strategy, in the background. You can close this tab.</p></div>
-          <div class="fact"><div class="display">$5 to $8</div><p>of Anthropic API credit with the default models</p></div>
+      </div></section>
+      <div class="wrap page">
+        <div class="section-head">
+          <h2>Everything it can write</h2>
+          <p>The diagnostic keeps the documents your business needs.</p>
         </div>
-      </section>`;
+        <div class="library">
+          ${TIERS.map(t => `
+            <div>
+              <h3>${esc(t.title)}</h3>
+              <ul>${Object.entries(DOC_INFO).filter(([id]) => tierOf(id) === t.prefix).map(([, [name]]) => `<li>${esc(name)}</li>`).join('')}</ul>
+            </div>`).join('')}
+        </div>
+      </div>`;
     return;
   }
 
   view.innerHTML = `
-    <div class="page-head">
+    <section class="band"><div class="wrap band-head">
       <div>
         <h1>Strategies</h1>
-        <p class="muted">Generations run one at a time, in the order you start them.</p>
+        <p>Generations run one at a time, in the order you start them. Everything stays in the data folder on this computer.</p>
       </div>
-      <a class="btn btn-primary" href="#/new">New strategy</a>
-    </div>
-    <div class="jobs">
-      ${jobs.map(job => `
-        <div class="job-row">
-          <div>
-            <a class="job-name" href="#/job/${job.id}">${esc(job.name)}</a>
-            <div class="job-sub">Started ${esc(fmtDate(job.created_at))}</div>
-          </div>
-          <div>
-            <span class="status status-${job.status}">${STATUS_LABEL[job.status] || job.status}</span>
-            <div class="bar" aria-hidden="true"><i style="width:${Math.round(progressOf(job) * 100)}%"></i></div>
-            <div class="small muted">${esc(job.status === 'running' && job.phase === 'documents' && job.current ? `${jobProgressText(job)}. Writing ${job.current}` : jobProgressText(job))}</div>
-          </div>
-          <div><span class="cell-label">Cost</span><span class="num">${fmtMoney(job.cost_usd)}</span></div>
-          <div><span class="cell-label">Time</span><span class="num">${fmtDuration(job.elapsed_s)}</span></div>
-          <div class="actions btn-row">
-            ${job.has_zip ? `<a class="btn btn-quiet" href="/api/jobs/${job.id}/download">Download ZIP</a>` : ''}
-            ${job.resumable ? `<button class="btn btn-quiet" data-resume="${job.id}">Resume</button>` : ''}
-            ${isActive(job) ? `<button class="btn btn-quiet" data-cancel="${job.id}">Cancel</button>` : ''}
-          </div>
-        </div>`).join('')}
+      <a class="btn btn-primary" href="#/new">${icon('plus')}New strategy</a>
+    </div></section>
+    <div class="wrap page">
+      <div class="job-grid">
+        ${jobs.map(job => `
+          <article class="job-card">
+            ${coverHtml(job)}
+            <div class="job-card-body">
+              <div class="job-card-top">
+                <span class="status status-${job.status}">${STATUS_LABEL[job.status] || job.status}</span>
+                <span>Started ${esc(fmtDate(job.created_at))}</span>
+              </div>
+              <h2><a href="#/job/${job.id}">${esc(job.name)}</a></h2>
+              ${isActive(job) || (job.doc_total && job.status !== 'completed') ? `<div class="progress ${job.status === 'running' ? 'is-live' : ''}" aria-hidden="true"><i style="width:${Math.round(progressOf(job) * 100)}%"></i></div>` : ''}
+              <p class="now-line">${esc(jobProgressText(job))}</p>
+              <dl class="facts-row">
+                <div><dt>Documents</dt><dd>${job.doc_done}${job.doc_total ? ` / ${job.doc_total}` : ''}</dd></div>
+                <div><dt>Cost</dt><dd data-live="cost:${job.id}">${fmtMoney(job.cost_usd)}</dd></div>
+                <div><dt>Time</dt><dd data-live="elapsed:${job.id}">${fmtDuration(job.elapsed_s)}</dd></div>
+              </dl>
+              <div class="btn-row">
+                <a class="btn btn-sm" href="#/job/${job.id}">Open</a>
+                ${job.has_zip ? `<a class="btn btn-sm" href="/api/jobs/${job.id}/download">${icon('download')}ZIP</a>` : ''}
+                ${job.resumable ? `<button class="btn btn-sm" data-resume="${job.id}">${icon('resume')}Resume</button>` : ''}
+                ${isActive(job) ? `<button class="btn btn-sm" data-cancel="${job.id}">${icon('stop')}Cancel</button>` : ''}
+              </div>
+            </div>
+          </article>`).join('')}
+        <a class="job-card-new" href="#/new">${icon('plus')}New strategy</a>
+      </div>
     </div>`;
 
+  wireImages(view);
   view.querySelectorAll('[data-resume]').forEach(b => { b.onclick = () => resumeJob(b.dataset.resume); });
   view.querySelectorAll('[data-cancel]').forEach(b => { b.onclick = () => cancelJob(b.dataset.cancel); });
 }
@@ -304,33 +464,103 @@ function tierOf(id) {
   return TIERS.find(t => t.prefix !== 'U' && id.startsWith(t.prefix))?.prefix || 'U';
 }
 
-function fileLabel(file) {
-  const n = file.name.toLowerCase();
-  if (n.includes('_diagram')) return 'Diagram';
-  if (n.includes('_chart')) return 'Chart';
-  if (n.includes('_render')) return 'Timeline';
-  return { pdf: 'PDF', html: 'Web page', png: 'Image', xlsx: 'Spreadsheet' }[file.kind] || file.kind.toUpperCase();
-}
-
 function filesFor(job, docId) {
-  if (!docId) return [];
   const prefix = docId.toLowerCase() + '_';
   return (job.files || []).filter(f => f.name.toLowerCase().startsWith(prefix));
 }
 
-function docRow(job, doc) {
-  const files = doc.status === 'done' || doc.status === 'failed' ? filesFor(job, doc.id) : [];
-  const mark = { done: '✓', failed: '✕' }[doc.status] || '';
-  return `
-    <div class="doc ${doc.status}">
-      <div class="mark" aria-hidden="true">${mark}</div>
-      <div class="id">${esc(doc.id)}</div>
-      <div>
-        <div class="title"><span>${esc(doc.name)}</span><span class="sr-only">${doc.status === 'running' ? ' (writing now)' : ''}</span></div>
-        ${files.length ? `<div class="files">${files.map(f => `<a href="/api/jobs/${job.id}/files/${encodeURIComponent(f.name)}" target="_blank" rel="noopener" title="${esc(f.name)} (${fmtSize(f.size)})">${esc(fileLabel(f))}</a>`).join('')}</div>` : ''}
-        ${doc.errors?.length ? `<div class="errs">${doc.errors.map(esc).join('<br>')}</div>` : ''}
-      </div>
+function variantOf(file) {
+  if (['xlsx', 'xls', 'csv'].includes(file.kind)) return 'sheet';
+  const stem = file.name.replace(/\.[^.]+$/, '').toLowerCase();
+  const m = stem.match(/_(diagram|chart|visual|render)$/);
+  if (m) return m[1];
+  if (stem.endsWith('_value_stack')) return 'value';
+  return 'report';
+}
+
+function labelOf(docId, variant) {
+  if (variant === 'visual') return VISUAL_LABEL[docId] || 'Visual';
+  if (variant === 'render') return RENDER_LABEL[docId] || 'Preview';
+  return { diagram: 'Diagram', chart: 'Chart', value: 'Value equation', sheet: 'Spreadsheet', report: 'Report' }[variant];
+}
+
+// The files of one document, most visual first, each with its card label.
+function docFiles(job, docId) {
+  return filesFor(job, docId)
+    .map(f => { const variant = variantOf(f); return { ...f, variant, label: labelOf(docId, variant) }; })
+    .sort((a, b) => VIEW_RANK[a.variant] - VIEW_RANK[b.variant] || a.name.localeCompare(b.name));
+}
+
+function slideHtml(job, f) {
+  if (f.preview === 'report') {
+    return `<div class="slide slide-report">
+      <img class="sheet" alt="" loading="lazy" src="${previewUrl(job, f, 0)}">
+      <img class="sheet" alt="" loading="lazy" src="${previewUrl(job, f, 1)}">
     </div>`;
+  }
+  if (f.preview === 'page') {
+    return `<div class="slide"><img class="sheet" alt="" loading="lazy" src="${previewUrl(job, f, 0)}"></div>`;
+  }
+  if (f.preview === 'web') {
+    return `<div class="slide slide-web"><div class="browser"><div class="browser-bar"><i></i><i></i><i></i></div>
+      <img alt="" loading="lazy" src="${previewUrl(job, f, 0)}"></div></div>`;
+  }
+  return `<div class="slide slide-image"><img alt="" loading="lazy" src="${fileUrl(job, f)}"></div>`;
+}
+
+function showView(card, job, doc, views, index) {
+  const key = `${job.id}:${doc.id}`;
+  const f = views[index];
+  state.views.set(key, index);
+  const holder = card.querySelector('[data-stage]');
+  holder.innerHTML = `
+    <a class="stage" href="${readerHash(job, doc.id, index)}" aria-label="Read the ${esc(f.label.toLowerCase())} of ${esc(doc.name)}">
+      ${slideHtml(job, f)}
+      <span class="stage-open">${icon('read')}Read ${esc(f.label.toLowerCase())}</span>
+    </a>`;
+  card.querySelector('[data-read]').href = readerHash(job, doc.id, index);
+  card.querySelectorAll('.view-tab').forEach(t => t.setAttribute('aria-pressed', String(Number(t.dataset.view) === index)));
+  wireImages(holder);
+}
+
+const GHOST_LABEL = { pending: 'In the plan', running: 'Writing now', failed: 'Failed' };
+
+function cardEl(job, doc) {
+  const key = `${job.id}:${doc.id}`;
+  const files = doc.status === 'done' || doc.status === 'failed' ? docFiles(job, doc.id) : [];
+  const sig = JSON.stringify([doc.status, doc.name, doc.errors, files.map(f => f.name + f.v)]);
+  const hit = state.cards.get(key);
+  if (hit && hit.sig === sig) return hit.el;
+
+  const views = files.filter(f => f.preview);
+  const el = document.createElement('article');
+  el.className = `card is-${doc.status}`;
+  el.innerHTML = `
+    <div data-stage>${views.length ? '' : `<div class="stage">${ghostHtml(GHOST_LABEL[doc.status] || '')}</div>`}</div>
+    ${views.length > 1 ? `
+      <div class="views" role="group" aria-label="Views of ${esc(doc.name)}">
+        ${views.map((f, i) => `<button type="button" class="view-tab" data-view="${i}">${esc(f.label)}</button>`).join('')}
+      </div>` : ''}
+    <div class="card-body">
+      <div class="card-title"><span class="doc-id">${esc(doc.id)}</span><h3>${esc(doc.name)}</h3></div>
+      <p class="card-desc">${esc(DOC_INFO[doc.id]?.[1] || '')}</p>
+      ${doc.errors?.length ? `<p class="card-errs">${doc.errors.map(esc).join('<br>')}</p>` : ''}
+      ${files.length ? `
+        <div class="files">
+          ${views.length ? `<a class="btn btn-sm btn-ink" data-read href="#">${icon('read')}Read</a>` : ''}
+          ${files.map(f => `<a class="file" href="${fileUrl(job, f)}" download="${esc(f.name)}" title="Download ${esc(f.name)}">${icon('download')}<span>${esc(f.label)}</span><small>${f.kind.toUpperCase()} ${fmtSize(f.size)}</small></a>`).join('')}
+        </div>` : ''}
+    </div>`;
+
+  if (views.length) {
+    const saved = state.views.get(key) || 0;
+    showView(el, job, doc, views, saved < views.length ? saved : 0);
+    el.querySelectorAll('.view-tab').forEach(t => {
+      t.onclick = () => showView(el, job, doc, views, Number(t.dataset.view));
+    });
+  }
+  state.cards.set(key, { sig, el });
+  return el;
 }
 
 function jobNotice(job) {
@@ -347,97 +577,141 @@ function jobNotice(job) {
       </div>`;
   }
   if (job.status === 'partial') {
-    return `<div class="notice notice-warn"><div><strong>Some documents had errors</strong><p>${esc(job.error_detail || '')}</p></div><button class="btn btn-primary" data-act="resume">Regenerate the missing documents</button></div>`;
+    return `<div class="notice notice-warn"><div><strong>Some documents had errors</strong><p>${esc(job.error_detail || '')} Resume to regenerate only those.</p></div></div>`;
   }
   if (job.status === 'cancelled') {
-    return `<div class="notice notice-info"><div><strong>Generation cancelled</strong><p>Finished documents are kept. Resume to generate the rest.</p></div><button class="btn btn-primary" data-act="resume">Resume</button></div>`;
-  }
-  if (job.status === 'queued') {
-    const running = (state.jobs || []).find(j => j.status === 'running' && j.id !== job.id);
-    return `<div class="notice notice-info"><div><strong>Queued</strong><p>${running ? `Starts when "${esc(running.name)}" finishes.` : 'Starting in a moment.'}</p></div></div>`;
+    return `<div class="notice notice-info"><div><strong>Generation cancelled</strong><p>Finished documents are kept. Resume to generate the rest.</p></div></div>`;
   }
   return '';
 }
 
-function renderJob(job) {
-  const pct = Math.round(progressOf(job) * 100);
-  const diagStatus = job.docs.length ? 'done'
-    : job.status === 'running' ? 'running'
-    : (job.status === 'failed' || job.status === 'interrupted') && job.attempts ? 'failed' : 'pending';
+function verdictHtml(d) {
+  if (!d?.bottleneck) return '';
+  const items = [
+    ['Bottleneck', BOTTLENECK[d.bottleneck] || d.bottleneck, 'key'],
+    ['Main channel', CHANNEL[d.primary_channel]],
+    ['Backup channel', CHANNEL[d.secondary_channel]],
+    ['Stage', MATURITY[d.maturity]],
+  ].filter(([, v]) => v);
+  return `<dl class="verdict">${items.map(([k, v, cls]) => `<div class="${cls || ''}"><dt>${k}</dt><dd><span>${esc(v)}</span></dd></div>`).join('')}</dl>`;
+}
 
+function nowHtml(job) {
+  if (job.status === 'running') {
+    if (job.phase === 'diagnostic') return 'Diagnosing the business';
+    if (job.phase === 'packaging') return 'Packaging the ZIP';
+    return job.current ? `Writing <b>${esc(job.current)}</b>` : 'Starting';
+  }
+  if (job.status === 'queued') {
+    const running = (state.jobs || []).find(j => j.status === 'running' && j.id !== job.id);
+    return running ? `Starts when <b>${esc(running.name)}</b> finishes` : 'Starting in a moment';
+  }
+  return job.finished_at ? `${endVerb(job)} ${esc(fmtDate(job.finished_at))}` : '';
+}
+
+function waitingHtml(job) {
+  if (job.status === 'queued') {
+    return `<div class="waiting"><div class="stage">${ghostHtml('')}</div><div><h2>Waiting for its turn</h2><p>Strategies are generated one at a time. This one starts as soon as the generation before it finishes.</p></div></div>`;
+  }
+  if (job.status === 'running') {
+    return `<div class="waiting is-running"><div class="stage">${ghostHtml('Reading')}</div><div><h2>Reading your answers</h2><p>The diagnostic finds the bottleneck and decides which of the 31 documents your business needs. It usually takes 3 to 6 minutes, then the documents appear here one by one.</p></div></div>`;
+  }
+  return `<div class="waiting"><div class="stage">${ghostHtml('')}</div><div><h2>No documents yet</h2><p>The run stopped before the diagnostic finished. Resume to start again from the diagnostic.</p></div></div>`;
+}
+
+function startHtml(job) {
+  const done = id => job.docs.some(d => d.id === id && d.status === 'done') && docFiles(job, id).some(f => f.preview);
+  if (!done('U1')) return '';
+  // The diagnostic opens on its report, the roadmap on its week-by-week view.
+  const reportView = docFiles(job, 'U1').filter(f => f.preview).findIndex(f => f.variant === 'report');
+  return `
+    <section class="start">
+      <div>
+        <h2>Where to start</h2>
+        <p>Read the diagnostic first: it explains the bottleneck the rest of the plan attacks. Then open the launch roadmap and do the first task of week 1. Come back to the other documents as the roadmap points to them.</p>
+      </div>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="${readerHash(job, 'U1', Math.max(0, reportView))}">${icon('read')}Read the diagnostic</a>
+        ${done('U9') ? `<a class="btn" href="${readerHash(job, 'U9', 0)}">${icon('read')}Open the roadmap</a>` : ''}
+      </div>
+    </section>`;
+}
+
+function renderJob(job) {
+  const sig = JSON.stringify(['job', liveFree(job), state.ui.renaming, (state.jobs || []).find(j => j.status === 'running')?.id]);
+  if (sig === state.ui.sig) { patchLive(job); return; }
+  state.ui.sig = sig;
+
+  const pct = Math.round(progressOf(job) * 100);
   const groups = TIERS.map(t => ({ ...t, docs: job.docs.filter(d => tierOf(d.id) === t.prefix) })).filter(g => g.docs.length);
 
-  const now = job.status === 'running'
-    ? job.phase === 'diagnostic' ? 'Diagnosing your business'
-      : job.phase === 'packaging' ? 'Packaging the ZIP'
-      : job.current ? `Writing <b>${esc(job.current)}</b>` : 'Starting'
-    : job.status === 'completed' ? `Finished ${esc(fmtDate(job.finished_at))}` : '';
-
   view.innerHTML = `
-    <a class="back" href="#/">All strategies</a>
-    <div class="page-head">
-      <div>
-        ${state.ui.renaming ? `
-          <form class="rename" data-rename>
-            <label class="sr-only" for="rename-input">Strategy name</label>
-            <input id="rename-input" type="text" value="${esc(job.name)}" maxlength="80" required>
-            <button class="btn btn-primary" type="submit">Save name</button>
-            <button class="btn btn-quiet" type="button" data-act="rename-cancel">Cancel</button>
-          </form>` : `<h1>${esc(job.name)}</h1>`}
-        <p><span class="status status-${job.status}">${STATUS_LABEL[job.status] || job.status}</span>
-           <span class="muted small">&nbsp; Started ${esc(fmtDate(job.created_at))}${job.attempts > 1 ? `, ${job.attempts} attempts` : ''}</span></p>
-      </div>
-    </div>
-
-    ${jobNotice(job)}
-
-    <div class="scoreboard">
-      <div class="score"><div class="display">${job.doc_done}<small> / ${job.doc_total || '?'}</small></div><p>documents written</p></div>
-      <div class="score"><div class="display">${fmtDuration(job.elapsed_s)}</div><p>generation time</p></div>
-      <div class="score"><div class="display">${fmtMoney(job.cost_usd)}</div><p>${isActive(job) ? 'API cost so far' : 'API cost'}</p></div>
-    </div>
-    <div class="bar big" aria-label="${pct}% done"><i style="width:${pct}%"></i></div>
-    <p class="now">${now}</p>
-
-    <div class="job-layout">
-      <div>
-        <div class="sheet-group">
-          <h3>Diagnostic</h3>
-          ${docRow(job, { id: '', name: diagStatus === 'running' ? 'Reading your answers and finding the bottleneck' : 'Business diagnostic and document plan', status: diagStatus })}
+    <section class="band"><div class="wrap">
+      <a class="back" href="#/">${icon('back')}All strategies</a>
+      <div class="hero">
+        <div class="hero-main">
+          <div class="hero-meta">
+            <span class="status status-${job.status}">${STATUS_LABEL[job.status] || job.status}</span>
+            <span>Started ${esc(fmtDate(job.created_at))}${job.attempts > 1 ? `, ${job.attempts} attempts` : ''}</span>
+          </div>
+          ${state.ui.renaming ? `
+            <form class="rename" data-rename>
+              <label class="sr-only" for="rename-input">Strategy name</label>
+              <input id="rename-input" type="text" value="${esc(job.name)}" maxlength="80" required>
+              <button class="btn btn-primary" type="submit">Save name</button>
+              <button class="btn" type="button" data-act="rename-cancel">Cancel</button>
+            </form>` : `<h1>${esc(job.name)}</h1>`}
+          ${verdictHtml(job.diagnosis)}
         </div>
-        ${groups.length ? groups.map(g => `
-          <div class="sheet-group">
-            <h3>${esc(g.title)}</h3>
-            ${g.docs.map(d => docRow(job, d)).join('')}
-          </div>`).join('') : `
-          <div class="waiting">
-            <h3>The document plan comes after the diagnostic</h3>
-            <p class="muted">The diagnostic decides which of the 31 documents your business needs. It usually takes 3 to 6 minutes.</p>
-          </div>`}
+        <div class="hero-actions">
+          ${job.has_zip ? `<a class="btn btn-primary" href="/api/jobs/${job.id}/download">${icon('download')}Download ZIP</a>` : ''}
+          ${job.resumable ? `<button class="btn ${job.has_zip ? '' : 'btn-primary'}" data-act="resume">${icon('resume')}Resume</button>` : ''}
+          ${isActive(job) ? `<button class="btn" data-act="cancel">${icon('stop')}Cancel generation</button>` : ''}
+          <details class="menu" ${state.ui.menuOpen ? 'open' : ''}>
+            <summary class="btn" aria-label="More actions">${icon('more')}More</summary>
+            <div class="menu-list">
+              <button data-act="duplicate">${icon('copy')}Edit answers and run again</button>
+              <button data-act="rename">${icon('pencil')}Rename</button>
+              ${!isActive(job) ? `<button class="danger" data-act="delete">${icon('trash')}Delete</button>` : ''}
+            </div>
+          </details>
+        </div>
       </div>
+      <div class="stats">
+        <div class="stat"><b>${job.doc_done}<small>/ ${job.doc_total || '?'}</small></b><span>documents written</span></div>
+        <div class="stat"><b data-live="elapsed:${job.id}">${fmtDuration(job.elapsed_s)}</b><span>generation time</span></div>
+        <div class="stat"><b data-live="cost:${job.id}">${fmtMoney(job.cost_usd)}</b><span>${isActive(job) ? 'API cost so far' : 'API cost'}</span></div>
+        <p class="now">${nowHtml(job)}</p>
+      </div>
+      <div class="progress ${job.status === 'running' ? 'is-live' : ''}" role="progressbar" aria-label="Documents written" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+    </div></section>
 
-      <aside class="side">
-        <h3>Your files</h3>
-        <p>${job.has_zip ? 'Everything in one archive, sorted into folders. Start with 0_START_HERE.pdf.' : 'The ZIP appears when the generation finishes. Finished documents open from the list as they arrive.'}</p>
-        ${job.has_zip ? `<a class="btn btn-primary" href="/api/jobs/${job.id}/download">Download ZIP</a>` : ''}
-        ${job.resumable ? `<button class="btn" data-act="resume">Resume</button>` : ''}
-        ${isActive(job) ? `<button class="btn" data-act="cancel">Cancel generation</button>` : ''}
-        <button class="btn btn-quiet" data-act="duplicate">Edit answers and run again</button>
-        <button class="btn btn-quiet" data-act="rename">Rename</button>
-        ${!isActive(job) ? `<button class="btn btn-danger" data-act="delete">Delete</button>` : ''}
-      </aside>
-    </div>
+    <div class="wrap page">
+      ${jobNotice(job)}
+      ${startHtml(job)}
+      ${groups.length ? groups.map(g => `
+        <section class="tier">
+          <header class="tier-head">
+            <h2>${esc(g.title)}</h2>
+            <p>${esc(g.blurb)}</p>
+            <span class="tier-count">${g.docs.length} ${g.docs.length > 1 ? 'documents' : 'document'}</span>
+          </header>
+          <div class="cards" data-tier="${g.prefix}"></div>
+        </section>`).join('') : waitingHtml(job)}
+      <details class="log" ${state.ui.logOpen ? 'open' : ''}>
+        <summary>Run log</summary>
+        <pre id="log">${esc(state.ui.log || 'Loading…')}</pre>
+      </details>
+    </div>`;
 
-    <details class="log" ${state.ui.logOpen ? 'open' : ''}>
-      <summary>Run log</summary>
-      <pre id="log">${esc(state.ui.log || 'Loading…')}</pre>
-    </details>`;
+  for (const g of groups) {
+    view.querySelector(`[data-tier="${g.prefix}"]`).append(...g.docs.map(d => cardEl(job, d)));
+  }
 
+  // Resume lives in the header; the notice only offers the fix for the error.
   const holder = view.querySelector('[data-notice-actions]');
-  if (holder && job.error) {
-    const acts = errorActions(job.error, job.id);
-    if (job.resumable && job.error.action !== 'resume') acts.push({ label: 'Resume', run: () => resumeJob(job.id) });
-    acts.forEach((a, i) => {
+  if (holder && job.error && job.error.action !== 'resume') {
+    errorActions(job.error, job.id).forEach((a, i) => {
       const b = document.createElement('button');
       b.className = `btn ${i === 0 ? 'btn-primary' : ''}`;
       b.textContent = a.label;
@@ -449,6 +723,7 @@ function renderJob(job) {
   view.querySelectorAll('[data-act]').forEach(b => {
     b.onclick = () => {
       const act = b.dataset.act;
+      state.ui.menuOpen = false;
       if (act === 'resume') resumeJob(job.id);
       else if (act === 'cancel') cancelJob(job.id);
       else if (act === 'delete') deleteJob(job.id, job.name);
@@ -457,6 +732,9 @@ function renderJob(job) {
       else if (act === 'rename-cancel') { state.ui.renaming = false; renderJob(job); }
     };
   });
+
+  const menu = view.querySelector('details.menu');
+  menu.ontoggle = () => { state.ui.menuOpen = menu.open; };
 
   const form = view.querySelector('[data-rename]');
   if (form) {
@@ -493,8 +771,116 @@ async function refreshLog(id) {
 async function refreshJobView(id) {
   const job = await api('GET', `/api/jobs/${id}`);
   if (state.route?.name !== 'job' || state.route.id !== id) return;
-  if (!state.ui.renaming) renderJob(job);
+  if (!state.ui.renaming || !view.querySelector('[data-rename]')) renderJob(job);
   if (state.ui.logOpen) refreshLog(id);
+  syncReader(job);
+}
+
+// ─── Reader ─────────────────────────────────────────────────
+// Documents open full screen inside the app: a report as its web version or
+// its PDF, a landing page or roadmap live, a visual or diagram at full size.
+// It lives in the URL (#/job/<id>/doc/<docId>?view=<n>&as=pdf) on top of the
+// strategy page, so Back closes it and the page keeps its scroll position.
+
+const reader = document.getElementById('reader');
+const FRAME_SANDBOX = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms';
+
+function readerHash(job, docId, viewIndex = 0, as = '') {
+  return `#/job/${job.id}/doc/${docId}?view=${viewIndex}${as ? `&as=${as}` : ''}`;
+}
+
+// Documents with something to read, in the order the strategy page shows them.
+function readableDocs(job) {
+  return TIERS.flatMap(t => job.docs.filter(d => tierOf(d.id) === t.prefix))
+    .filter(d => (d.status === 'done' || d.status === 'failed') && docFiles(job, d.id).some(f => f.preview));
+}
+
+function syncReader(job) {
+  const route = state.route;
+  const docs = route?.doc ? readableDocs(job) : [];
+  const pos = docs.findIndex(d => d.id === route.doc);
+  if (pos < 0) { closeReaderUi(); return; }
+
+  const doc = docs[pos];
+  const views = docFiles(job, doc.id).filter(f => f.preview);
+  const index = Math.min(Math.max(0, Number(route.params.get('view')) || 0), views.length - 1);
+  const f = views[index];
+  let as = 'image';
+  if (f.preview !== 'image') as = route.params.get('as') === 'pdf' && f.pdf ? 'pdf' : f.web ? 'web' : 'pdf';
+  const sig = JSON.stringify([job.id, doc.id, index, as, f.name, f.v, docs.map(d => d.id)]);
+  if (sig === state.readerSig) return;
+  state.readerSig = sig;
+
+  const src = as === 'image' ? fileUrl(job, f) : fileUrl(job, { name: as === 'pdf' ? f.pdf : f.web, v: f.v });
+  const step = (d, dir) => d
+    ? `<a class="btn btn-sm" href="${readerHash(job, d.id)}" data-replace data-focus="${dir}" aria-label="${dir === 'prev' ? 'Previous' : 'Next'} document: ${esc(d.name)}" title="${esc(d.name)}">${icon(dir)}</a>`
+    : `<span class="btn btn-sm" aria-disabled="true">${icon(dir)}</span>`;
+  const keep = reader.contains(document.activeElement) ? document.activeElement.dataset.focus : null;
+
+  reader.innerHTML = `
+    <div class="reader-bar">
+      <div class="reader-top">
+        <button type="button" class="reader-close" data-reader-close data-focus="close" aria-label="Close the reader">${icon('back')}<span>All documents</span></button>
+        <div class="reader-title"><span class="doc-id">${esc(doc.id)}</span><h2 id="reader-title">${esc(doc.name)}</h2></div>
+        <div class="reader-step">${step(docs[pos - 1], 'prev')}<span>${pos + 1} of ${docs.length}</span>${step(docs[pos + 1], 'next')}</div>
+      </div>
+      <div class="reader-tools">
+        <div class="views" role="group" aria-label="Views of ${esc(doc.name)}">
+          ${views.length > 1 ? views.map((v, i) => `<a class="view-tab" href="${readerHash(job, doc.id, i)}" data-replace data-focus="view-${i}" aria-pressed="${i === index}">${esc(v.label)}</a>`).join('') : ''}
+        </div>
+        <div class="reader-actions">
+          ${f.web && f.pdf ? `
+            <div class="seg" role="group" aria-label="Format">
+              <a href="${readerHash(job, doc.id, index, 'web')}" data-replace data-focus="web" aria-pressed="${as === 'web'}">Web page</a>
+              <a href="${readerHash(job, doc.id, index, 'pdf')}" data-replace data-focus="pdf" aria-pressed="${as === 'pdf'}">PDF</a>
+            </div>` : ''}
+          <a class="btn btn-sm" href="${src}" target="_blank" rel="noopener">${icon('open')}New tab</a>
+          <a class="btn btn-sm btn-primary" href="${fileUrl(job, f)}" download="${esc(f.name)}">${icon('download')}Download ${f.kind.toUpperCase()}</a>
+        </div>
+      </div>
+    </div>
+    <div class="reader-body">
+      ${as === 'image'
+        ? `<div class="reader-image"><img src="${src}" alt="${esc(f.label)} of ${esc(doc.name)}" title="Click to zoom"></div>`
+        : `<iframe class="reader-frame" src="${src}" title="${esc(doc.name)}, ${esc(as === 'pdf' ? 'PDF' : f.label.toLowerCase())}"${as === 'web' ? ` sandbox="${FRAME_SANDBOX}"` : ''}></iframe>`}
+    </div>`;
+
+  const img = reader.querySelector('.reader-image img');
+  if (img) {
+    // Visuals and diagrams are rendered at twice their size: show them at
+    // their natural size, and at full resolution on click.
+    const size = () => { img.style.width = `${img.naturalWidth / (img.classList.contains('is-zoomed') ? 1 : 2)}px`; };
+    if (img.complete && img.naturalWidth) size(); else img.addEventListener('load', size, { once: true });
+    img.onclick = () => { img.classList.toggle('is-zoomed'); size(); };
+  }
+  openReaderUi();
+  (reader.querySelector(`[data-focus="${keep}"]`) || reader.querySelector('[data-reader-close]')).focus();
+}
+
+function openReaderUi() {
+  if (!reader.hidden) return;
+  state.readerReturn = document.activeElement;
+  reader.hidden = false;
+  document.documentElement.classList.add('is-reading');
+  view.inert = true;
+  document.querySelector('.topbar').inert = true;
+}
+
+function closeReaderUi() {
+  if (reader.hidden) return;
+  reader.hidden = true;
+  reader.innerHTML = '';
+  state.readerSig = '';
+  document.documentElement.classList.remove('is-reading');
+  view.inert = false;
+  document.querySelector('.topbar').inert = false;
+  if (document.contains(state.readerReturn)) state.readerReturn.focus({ preventScroll: true });
+}
+
+function closeReader() {
+  // Opened from the strategy page: going back is closing. Opened from a link: replace.
+  if (state.readerPushed) history.back();
+  else { history.replaceState(null, '', `#/job/${state.route.id}`); render(); }
 }
 
 // ─── New strategy form ──────────────────────────────────────
@@ -577,41 +963,44 @@ function renderForm() {
   const stepDone = n => questionsOf(n).filter(isVisible).every(q => !q.required || hasAnswer(F.answers[q.id]));
 
   view.innerHTML = `
-    <div class="page-head">
+    <section class="band"><div class="wrap band-head">
       <div>
         <h1>New strategy</h1>
-        <p class="muted">About 10 minutes. Your answers are saved in this browser as you go.</p>
+        <p>About 10 minutes. Your answers are saved in this browser as you go.</p>
       </div>
       <div class="form-tools">
-        <button class="btn-link" data-tool="example">Fill with example answers</button>
-        <button class="btn-link" data-tool="clear">Clear all answers</button>
+        <button class="btn" data-tool="example">Fill with example answers</button>
+        <button class="btn" data-tool="clear">Clear all answers</button>
       </div>
-    </div>
-    <div class="wizard">
-      <ol class="steps">
-        ${steps.map((s, i) => {
-          const n = i + 1;
-          const cls = n === F.step ? 'current' : stepDone(n) ? 'done' : '';
-          return `<li class="${cls}"><button data-step="${n}" ${n === F.step ? 'aria-current="step"' : ''}>${esc(s.title)}<small>Step ${n} of ${total}</small></button></li>`;
-        }).join('')}
-      </ol>
-      <form id="qform" novalidate>
-        <div class="step-head">
-          <div class="step-count">Step ${F.step} of ${total}</div>
-          <h2>${esc(step.title)}</h2>
-          <p>${esc(step.subtitle)}</p>
-        </div>
-        ${questionsOf(F.step).map(questionHtml).join('')}
-        ${last ? `
-          <div class="q">
-            <label class="q-label" for="job-name">Name this strategy<span class="opt">Optional</span></label>
-            <input type="text" id="job-name" maxlength="80" value="${esc(F.name)}" placeholder="Defaults to your industry">
-          </div>` : ''}
-        <div class="form-nav">
-          ${F.step > 1 ? '<button type="button" class="btn btn-quiet" data-nav-step="back">Back</button>' : '<span></span>'}
-          <button type="submit" class="btn btn-primary">${last ? 'Generate my strategy' : 'Continue'}</button>
-        </div>
-      </form>
+    </div></section>
+    <div class="wrap page">
+      <div class="wizard">
+        <ol class="steps">
+          ${steps.map((s, i) => {
+            const n = i + 1;
+            const cls = n === F.step ? 'current' : stepDone(n) ? 'done' : '';
+            const dot = cls === 'done' ? icon('check') : n;
+            return `<li class="${cls}"><button data-step="${n}" ${n === F.step ? 'aria-current="step"' : ''}><span class="step-dot">${dot}</span><span>${esc(s.title)}</span></button></li>`;
+          }).join('')}
+        </ol>
+        <form id="qform" class="form-card" novalidate>
+          <div class="step-head">
+            <div class="step-count">Step ${F.step} of ${total}</div>
+            <h2>${esc(step.title)}</h2>
+            <p>${esc(step.subtitle)}</p>
+          </div>
+          ${questionsOf(F.step).map(questionHtml).join('')}
+          ${last ? `
+            <div class="q">
+              <label class="q-label" for="job-name">Name this strategy<span class="opt">Optional</span></label>
+              <input type="text" id="job-name" maxlength="80" value="${esc(F.name)}" placeholder="Defaults to your industry">
+            </div>` : ''}
+          <div class="form-nav">
+            ${F.step > 1 ? '<button type="button" class="btn" data-nav-step="back">Back</button>' : '<span></span>'}
+            <button type="submit" class="btn btn-primary">${last ? 'Generate my strategy' : 'Continue'}</button>
+          </div>
+        </form>
+      </div>
     </div>`;
 
   bindForm();
@@ -787,40 +1176,47 @@ function renderSettings() {
   const s = state.settings;
   const source = { settings: 'Saved in OpenHormozi', environment: 'Read from the ANTHROPIC_API_KEY environment variable' }[s.api_key_source] || '';
   view.innerHTML = `
-    <div class="page-head"><div><h1>Settings</h1></div></div>
-    <div class="settings">
-      <section>
-        <h2>Anthropic API key</h2>
-        <p class="key-status">${s.has_api_key ? `Key ${esc(s.api_key_hint)}. ${esc(source)}.` : 'No key yet. Generation needs one.'}</p>
-        <form class="field" id="key-form">
-          <label for="api-key">${s.has_api_key ? 'Replace the key' : 'Paste your key'}</label>
-          <div class="key-input">
-            <input type="password" id="api-key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
-            <button type="button" class="btn btn-quiet" id="toggle-key">Show</button>
-          </div>
-          <p class="help">Create one in the <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic Console</a>. It is stored in <code>data/settings.json</code> on this computer and only ever sent to Anthropic.</p>
-          <div class="btn-row field">
-            <button type="submit" class="btn btn-primary">Save key</button>
-            <button type="button" class="btn" id="test-key">Test key</button>
-            ${s.api_key_source === 'settings' ? '<button type="button" class="btn btn-danger" id="remove-key">Remove saved key</button>' : ''}
-          </div>
-        </form>
-      </section>
-      <section>
-        <h2>Models</h2>
-        <p class="help">The defaults balance quality and cost: a full strategy costs about $5 to $8. Stronger models raise both.</p>
-        <form id="models-form">
-          ${s.roles.map(r => `
-            <div class="field">
-              <label for="model-${r.id}">${esc(r.label)}</label>
-              <select id="model-${r.id}" data-role="${r.id}">
-                ${modelOptions(s, s.models[r.id])}
-              </select>
-              <p class="help">${esc(r.help)}</p>
-            </div>`).join('')}
-          <div class="btn-row field"><button type="submit" class="btn btn-primary">Save models</button></div>
-        </form>
-      </section>
+    <section class="band"><div class="wrap band-head">
+      <div>
+        <h1>Settings</h1>
+        <p>Your Anthropic key and the models each part of the generation uses.</p>
+      </div>
+    </div></section>
+    <div class="wrap page">
+      <div class="settings">
+        <section class="panel">
+          <h2>Anthropic API key</h2>
+          <p class="key-status ${s.has_api_key ? 'ok' : ''}">${s.has_api_key ? `Key ${esc(s.api_key_hint)}. ${esc(source)}.` : 'No key yet. Generation needs one.'}</p>
+          <form class="field" id="key-form">
+            <label for="api-key">${s.has_api_key ? 'Replace the key' : 'Paste your key'}</label>
+            <div class="key-input">
+              <input type="password" id="api-key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+              <button type="button" class="btn" id="toggle-key">Show</button>
+            </div>
+            <p class="help">Create one in the <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic Console</a>. It is stored in <code>data/settings.json</code> on this computer and only ever sent to Anthropic.</p>
+            <div class="btn-row field">
+              <button type="submit" class="btn btn-primary">Save key</button>
+              <button type="button" class="btn" id="test-key">Test key</button>
+              ${s.api_key_source === 'settings' ? '<button type="button" class="btn btn-danger" id="remove-key">Remove saved key</button>' : ''}
+            </div>
+          </form>
+        </section>
+        <section class="panel">
+          <h2>Models</h2>
+          <p class="help">The defaults balance quality and cost: a full strategy costs about $3 to $8. Stronger models raise both.</p>
+          <form id="models-form">
+            ${s.roles.map(r => `
+              <div class="field">
+                <label for="model-${r.id}">${esc(r.label)}</label>
+                <select id="model-${r.id}" data-role="${r.id}">
+                  ${modelOptions(s, s.models[r.id])}
+                </select>
+                <p class="help">${esc(r.help)}</p>
+              </div>`).join('')}
+            <div class="btn-row field"><button type="submit" class="btn btn-primary">Save models</button></div>
+          </form>
+        </section>
+      </div>
     </div>`;
 
   const keyInput = document.getElementById('api-key');
@@ -881,8 +1277,8 @@ function modelOptions(s, current) {
 function parseRoute() {
   const [path, query] = (location.hash.slice(1) || '/').split('?');
   const params = new URLSearchParams(query || '');
-  const m = path.match(/^\/job\/([a-z0-9]+)$/);
-  if (m) return { name: 'job', id: m[1], params };
+  const m = path.match(/^\/job\/([a-z0-9]+)(?:\/doc\/([A-Z]+[0-9]+))?$/);
+  if (m) return { name: 'job', id: m[1], doc: m[2] || null, params };
   if (path === '/new') return { name: 'new', params };
   if (path === '/settings') return { name: 'settings', params };
   return { name: 'list', params };
@@ -890,9 +1286,18 @@ function parseRoute() {
 
 async function render() {
   const route = parseRoute();
-  const changed = state.route?.name !== route.name || state.route?.id !== route.id;
+  const before = state.route;
+  const changed = before?.name !== route.name || before?.id !== route.id;
+  // The reader was opened from this strategy's page (a history entry was pushed).
+  if (route.doc && !before?.doc) state.readerPushed = !changed;
   state.route = route;
-  if (changed) state.ui = { renaming: false, logOpen: false, log: '' };
+  if (route.name !== 'job') closeReaderUi();
+  if (changed) {
+    state.ui = { renaming: false, logOpen: false, log: '', menuOpen: false, sig: '' };
+    state.cards.clear();
+  }
+  // Views other than the list and the job page always rebuild.
+  if (route.name !== 'list' && route.name !== 'job') state.ui.sig = '';
 
   document.querySelectorAll('.nav a').forEach(a => {
     if (a.dataset.nav === route.name) a.setAttribute('aria-current', 'page');
@@ -913,7 +1318,8 @@ async function render() {
     }
   } catch (err) {
     if (err.status === 404) {
-      view.innerHTML = '<h1>Not found</h1><p class="muted" style="margin-top:12px">This strategy was deleted or never existed. <a href="#/">Back to strategies</a></p>';
+      closeReaderUi();
+      view.innerHTML = '<div class="wrap page"><h1>Not found</h1><p class="muted" style="margin-top:12px">This strategy was deleted or never existed. <a href="#/">Back to strategies</a></p></div>';
     } else {
       showError(err);
     }
@@ -938,6 +1344,27 @@ async function start() {
     state.jobs.forEach(j => state.statuses.set(j.id, j.status));
   } catch { /* shown by render */ }
   window.addEventListener('hashchange', render);
+  // A click outside an open menu closes it.
+  document.addEventListener('click', ev => {
+    document.querySelectorAll('details.menu[open]').forEach(d => { if (!d.contains(ev.target)) d.open = false; });
+  });
+  // Inside the reader, switching views or documents replaces the history entry,
+  // so Back always returns to the strategy page.
+  reader.addEventListener('click', ev => {
+    if (ev.target.closest('[data-reader-close]')) { closeReader(); return; }
+    const a = ev.target.closest('a[data-replace]');
+    if (a && ev.button === 0 && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey) {
+      ev.preventDefault();
+      history.replaceState(null, '', a.getAttribute('href'));
+      render();
+    }
+  });
+  document.addEventListener('keydown', ev => {
+    if (reader.hidden || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+    if (ev.key === 'Escape') { ev.preventDefault(); closeReader(); }
+    if (ev.key === 'ArrowLeft') reader.querySelector('a[data-focus="prev"]')?.click();
+    if (ev.key === 'ArrowRight') reader.querySelector('a[data-focus="next"]')?.click();
+  });
   await render();
   setInterval(() => {
     // Poll fast while something is generating, slowly otherwise.
