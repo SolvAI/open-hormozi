@@ -1,27 +1,106 @@
-<h1 align="center">OpenHormozi</h1>
-
 <p align="center">
-  <b>The open-source alternative to ACQ AI, Alex Hormozi's AI business advisor.</b><br>
-  Fill in one form about your business. Get a complete acquisition strategy built on Hormozi's frameworks:<br>
-  offer, pricing, funnel, sales scripts, channel playbooks and a week-by-week launch roadmap.<br>
-  Runs on your computer with your own Anthropic API key.
+  <img src="docs/banner.jpg" alt="OpenHormozi: your whole acquisition strategy from one form" width="880">
 </p>
 
 <p align="center">
-  <a href="#run-it-on-your-computer">Install</a> ·
-  <a href="#31-documents-picked-for-your-business">What you get</a> ·
-  <a href="#what-will-this-cost-me">Cost</a> ·
-  <a href="#when-something-goes-wrong">Troubleshooting</a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-FFD60A?style=flat-square&labelColor=111D35"></a>
+  <a href="#run-it-on-your-computer"><img alt="Runs on Windows, macOS and Linux" src="https://img.shields.io/badge/runs_on-Windows_%7C_macOS_%7C_Linux-FFD60A?style=flat-square&labelColor=111D35"></a>
+  <img alt="Python 3.10 or later" src="https://img.shields.io/badge/python-3.10%2B-FFD60A?style=flat-square&labelColor=111D35">
+  <img alt="Built on Claude" src="https://img.shields.io/badge/built_on-Claude-FFD60A?style=flat-square&labelColor=111D35">
+</p>
+
+<h3 align="center">The open-source alternative to ACQ AI, Alex Hormozi's AI business advisor.</h3>
+
+<p align="center">
+  Answer one form about your business. OpenHormozi finds the bottleneck, picks the channels that fit,<br>
+  and writes up to 31 documents for it: offer, pricing, funnel, sales scripts, channel playbooks<br>
+  and a week-by-week launch roadmap. It all runs on your computer with your own Anthropic key.
 </p>
 
 <p align="center">
-  <img src="docs/screenshot-generation.png" alt="A finished strategy: the diagnosed bottleneck, cost and time, and a preview of every document" width="860">
+  <a href="#run-it-on-your-computer"><b>Install</b></a> ·
+  <a href="#one-real-run-start-to-finish"><b>See a real strategy</b></a> ·
+  <a href="#what-will-this-cost-me"><b>Cost</b></a> ·
+  <a href="#when-something-goes-wrong"><b>Troubleshooting</b></a>
 </p>
 
 > **Not affiliated with Alex Hormozi or Acquisition.com.** OpenHormozi is an independent,
 > MIT-licensed project. It is not endorsed by, sponsored by or connected to Alex Hormozi,
 > Acquisition.com or ACQ AI. His name appears here only to describe the publicly
 > published frameworks the prompts apply ($100M Offers, $100M Leads).
+
+## One real run, start to finish
+
+Everything below came out of a single run on the fictional business in
+[`examples/example_form.json`](examples/example_form.json), a bookkeeping and fractional-CFO
+practice for e-commerce brands: **19 documents in 25 minutes, for $3.54 of API credit.**
+The images are cropped and framed; the content is exactly what the run produced.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="docs/examples/pricing-and-packaging.pdf"><img src="docs/examples/report-pages.jpg" alt="Cover and first page of the Pricing &amp; Packaging report"></a>
+      <br><b>Branded reports.</b> Every document is a designed PDF with a cover, tables and callouts. This one reprices the business into three tiers.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/examples/pricing-table.jpg" alt="Three pricing tiers with a recommended plan">
+      <br><b>Pricing table.</b> An anchor tier, a recommended plan and a decoy, laid out for a pricing page.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/examples/persona-card.jpg" alt="Persona card for the ideal client">
+      <br><b>Customer avatar.</b> Who buys, what hurts, what triggers the purchase and where to find them, on one card.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/examples/positioning-map.jpg" alt="Positioning map against the alternatives">
+      <br><b>Positioning map.</b> The business placed against the alternatives its buyers actually compare it to.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/examples/landing-page.jpg" alt="The generated landing page">
+      <br><b>Landing page.</b> Conversion copy section by section, delivered as an HTML page you can edit and publish.
+    </td>
+    <td width="50%" valign="top">
+      <a href="docs/examples/launch-roadmap.pdf"><img src="docs/examples/launch-roadmap.jpg" alt="The week-by-week launch roadmap"></a>
+      <br><b>Launch roadmap.</b> Week by week tasks with hours, an owner and the document each task comes from.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/examples/financial-model.jpg" alt="Six-month revenue projection chart">
+      <br><b>Financial model.</b> Conservative and optimistic monthly revenue against the target.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/examples/funnel-diagram.jpg" alt="Sales funnel diagram">
+      <br><b>Funnel blueprint.</b> Every step from first touch to paying client, drawn as a diagram.
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  Read two of them in full:
+  <a href="docs/examples/pricing-and-packaging.pdf"><b>Pricing &amp; Packaging</b></a> (PDF, 5 pages) and
+  <a href="docs/examples/launch-roadmap.pdf"><b>Launch Roadmap</b></a> (PDF, 7 pages).
+</p>
+
+## Your strategy on one page
+
+The strategy page leads with the diagnosis: the bottleneck holding the business back, the channels
+to use first, and what the run cost. Under it, every document gets a card with a live preview.
+
+<p align="center">
+  <img src="docs/screenshot-generation.png" alt="A finished strategy: the diagnosed bottleneck, cost and time, and a preview of every document" width="860">
+</p>
+
+Click any card to read the document full screen without leaving the app. Reports open as a web
+page or as the PDF, the landing page and roadmap run live, diagrams open at full size, and the
+arrow keys move to the next document.
+
+<p align="center">
+  <img src="docs/screenshot-reader.png" alt="The reader showing the Pricing &amp; Packaging report as a web page" width="860">
+</p>
 
 ## Why this exists
 
@@ -119,14 +198,12 @@ writing, Haiku 5.5 for the summaries passed between documents.
 - Rendering the PDFs loads web fonts from Google Fonts and the chart and diagram libraries
   from jsDelivr. No analytics, no telemetry, no account.
 
-## Manage your strategies
+## Queue, cancel, resume
 
-<img src="docs/screenshot-build-sheet.png" alt="Finished documents show a preview; the one being written is outlined in yellow" width="560" align="right">
+<img src="docs/screenshot-build-sheet.png" alt="Finished documents show a preview; the one being written is outlined in yellow" width="520" align="right">
 
-- Watch each document get written. Finished ones show a preview (report pages, persona card,
-  diagrams, landing page) as soon as they're done.
-- Read every document inside the app: reports as a web page or PDF, the landing page and
-  roadmap live, visuals and diagrams at full size. Arrow keys move between documents.
+- Watch each document get written. Finished ones get their preview and a **Read** button
+  while the rest of the run continues.
 - Strategies run one at a time; start several and they queue.
 - **Cancel** a run at any point. **Resume** later and only the missing documents are generated.
 - **Edit answers and run again** to compare versions of your strategy.
@@ -229,4 +306,4 @@ and support for other LLM providers in `engine/llm/`.
 SIL Open Font License (`app/static/fonts/OFL.txt`).
 
 Built on the business frameworks Alex Hormozi has published in *$100M Offers* and *$100M Leads*.
-If this project helps you, buy the books.
+If this project helps you, buy the books, and star the repo so other founders can find it.
